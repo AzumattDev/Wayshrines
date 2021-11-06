@@ -19,22 +19,21 @@ namespace Wayshrine
         private const string ModGUID = "azumatt.Wayshrine";
         public static bool isAdmin = false;
         public static bool hammerAdded = false;
-        public static Sprite way_icon;
-        public static Sprite way_icon_ash;
-        public static Sprite way_icon_frost;
-        public static Sprite way_icon_plains;
-        public static Sprite way_icon_skull;
-        public static Sprite way_icon_skull_2;
-        public static ManualLogSource waylogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
+        public static Sprite way_icon = null!;
+        public static Sprite way_icon_ash = null!;
+        public static Sprite way_icon_frost = null!;
+        public static Sprite way_icon_plains = null!;
+        public static Sprite way_icon_skull = null!;
+        public static Sprite way_icon_skull_2 = null!;
+        public static readonly ManualLogSource waylogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
 
         private static readonly ConfigSync configSync = new(ModGUID)
         { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
-        public static ConfigFile localizationFile;
-        public static Dictionary<string, ConfigEntry<string>> m_localizedStrings = new();
+        private static ConfigFile localizationFile = null!;
+        private static readonly Dictionary<string, ConfigEntry<string>> m_localizedStrings = new();
 
-        public static ConfigEntry<bool>? ServerConfigLocked;
-        public static ConfigEntry<int>? NexusId;
+        private static ConfigEntry<bool>? ServerConfigLocked;
         public static ConfigEntry<bool>? OriginalFunc;
         public static ConfigEntry<bool>? DisableBifrostEffect;
 
@@ -61,12 +60,12 @@ namespace Wayshrine
             Harmony harmony = new(ModGUID);
             localizationFile =
                 new ConfigFile(
-                    Path.Combine(Path.GetDirectoryName(Config.ConfigFilePath), ModGUID + ".Localization.cfg"), false);
+                    Path.Combine(Path.GetDirectoryName(Config.ConfigFilePath)!, ModGUID + ".Localization.cfg"), false);
             Assets.LoadAssets();
 
             ServerConfigLocked = config("General", "Force Server Config", false, "Force Server Config");
             configSync.AddLockingConfigEntry(ServerConfigLocked);
-            NexusId = config("General", "NexusID", 1298, "Nexus mod ID for updates");
+            config("General", "NexusID", 1298, "Nexus mod ID for updates");
             OriginalFunc = config("General", "Original Function", false,
                 "Use the original functionality of the Wayshrines, unlink them and only take you to spawn or home");
             DisableBifrostEffect = config("General", "Disable Bifrost Effect", false,
@@ -88,7 +87,7 @@ namespace Wayshrine
             Config.Save();
         }
 
-        public static void Localize()
+        private static void Localize()
         {
             try
             {
@@ -108,18 +107,16 @@ namespace Wayshrine
             }
         }
 
-        public static string LocalizeWord(string key, string val)
+        private static void LocalizeWord(string key, string val)
         {
             if (!m_localizedStrings.ContainsKey(key))
             {
-                var loc = Localization.instance;
-                var langSection = loc.GetSelectedLanguage();
-                var configEntry = localizationFile.Bind(langSection, key, val);
+                Localization? loc = Localization.instance;
+                string? langSection = loc.GetSelectedLanguage();
+                ConfigEntry<string>? configEntry = localizationFile.Bind(langSection, key, val);
                 Localization.instance.AddWord(key, configEntry.Value);
                 m_localizedStrings.Add(key, configEntry);
             }
-
-            return $"${key}";
         }
     }
 }

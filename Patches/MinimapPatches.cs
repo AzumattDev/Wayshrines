@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace Wayshrine
 {
-    public class MinimapPatches
+    public static class MinimapPatches
     {
         public static bool IsHeimdallMode;
         public static bool list_populated = false;
@@ -23,31 +23,29 @@ namespace Wayshrine
             WayshrineCustomBehaviour.pins.Clear();
         }
 
-        public static async void DoBiFrostStuff()
+        private static async void DoBiFrostStuff()
         {
             if (!Player.m_localPlayer.IsTeleportable())
             {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport", 0, null);
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
                 return;
             }
-                
-
+            
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = true;
 
             Minimap minimap = Minimap.instance;
             Minimap.PinData closestPin = minimap.GetClosestPin(minimap.ScreenToWorldPoint(Input.mousePosition),
                 minimap.m_removeRadius * (minimap.m_largeZoom * 2f));
 
-            WayshrinePlugin.waylogger.LogDebug("Closest Pin grabbed " + closestPin.m_name.ToString());
+            WayshrinePlugin.waylogger.LogDebug("Closest Pin grabbed " + closestPin.m_name);
 
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = false;
 
-            if (closestPin == null ||
-                !WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out var wayshrine)) return;
+            if (!WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
 
-            var position = closestPin.m_pos;
-            var rotation = wayshrine.rotation;
-            var pos = position + rotation.normalized * Vector3.forward + Vector3.up;
+            Vector3 position = closestPin.m_pos;
+            Quaternion rotation = wayshrine.rotation;
+            Vector3 pos = position + rotation.normalized * Vector3.forward + Vector3.up;
             Minimap.instance.SetMapMode(Minimap.MapMode.Small);
             LeaveHeimdallMode();
             await Task.Delay(TimeSpan.FromSeconds(2));
@@ -62,7 +60,8 @@ namespace Wayshrine
                 if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                 {
                     //GameObject.Instantiate<GameObject>(prefab1, Player.m_localPlayer.transform.position, Quaternion.identity);
-                    Object.Instantiate(prefab2, Player.m_localPlayer.transform.position,
+                    Vector3 position1 = Player.m_localPlayer.transform.position;
+                    Object.Instantiate(prefab2, position1,
                         Quaternion.identity);
 
                     // Tell it to respect the default game mixer to not blow your fucking ear drums out.
@@ -77,7 +76,7 @@ namespace Wayshrine
                             "AzuWayshrine: AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
                     }
 
-                    var effect = Object.Instantiate(prefab3, Player.m_localPlayer.transform.position,
+                    GameObject? effect = Object.Instantiate(prefab3, position1,
                         Quaternion.identity);
                     effect.AddComponent<TimedDestruction>().m_timeout = 4;
                     var effectTD = effect.GetComponent<TimedDestruction>();
@@ -86,11 +85,8 @@ namespace Wayshrine
 
             await Task.Delay(TimeSpan.FromSeconds(1));
             Player p = Player.m_localPlayer;
-            PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
 
             WayshrinePlugin.waylogger.LogDebug("Calling BiFrost on: " + p.GetPlayerName());
-
-
 
             Player.m_localPlayer.TeleportTo(new Vector3(pos.x + 1.5f, pos.y, pos.z + 1.5f), rotation, true);
             p.m_lastGroundTouch = 0f;
@@ -108,10 +104,10 @@ namespace Wayshrine
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.Start))]
         public class MMStart_Patch
         {
-            private static void Postfix(Minimap __instance, ref bool[] ___m_visibleIconTypes)
+            private static void Postfix(Minimap __instance, out bool[] ___m_visibleIconTypes)
             {
                 ___m_visibleIconTypes = new bool[200];
-                for (int i = 0; i < 200; i++)
+                for (int i = 0; i < 200; ++i)
                 {
                     __instance.m_visibleIconTypes[i] = true;
                 }
@@ -130,13 +126,14 @@ namespace Wayshrine
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapLeftClick))]
         private class OnMapLeftClick_Patch
         {
-            private static bool Prefix(Minimap __instance)
+            private static bool Prefix()
             {
-
                 WayshrinePlugin.waylogger.LogDebug("Map Left Click: HeimdallMode is " + IsHeimdallMode);
 
                 if (!IsHeimdallMode)
+                {
                     return true;
+                }
                 DoBiFrostStuff();
                 return false;
             }
@@ -145,7 +142,7 @@ namespace Wayshrine
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapDblClick))]
         private class OnMapDblClick_Patch
         {
-            private static bool Prefix(Minimap __instance)
+            private static bool Prefix()
             {
                 return !IsHeimdallMode;
             }
@@ -154,7 +151,7 @@ namespace Wayshrine
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapRightClick))]
         private class OnMapRightClick_Patch
         {
-            private static bool Prefix(Minimap __instance, UIInputHandler handler)
+            private static bool Prefix()
             {
                 return !IsHeimdallMode;
             }
@@ -163,7 +160,7 @@ namespace Wayshrine
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapMiddleClick))]
         private class OnMapMiddleClick_Patch
         {
-            private static bool Prefix(Minimap __instance, UIInputHandler handler)
+            private static bool Prefix()
             {
                 return !IsHeimdallMode;
             }

@@ -1,4 +1,4 @@
-﻿namespace Wayshrine.Extensions
+﻿namespace Wayshrine
 {
     /// <summary>
     ///     Extends ZNet with a clear diversion between local, client and server instances.
@@ -39,7 +39,7 @@
         /// </summary>
         /// <param name="znet"></param>
         /// <returns></returns>
-        public static bool IsClientInstance(this ZNet znet)
+        private static bool IsClientInstance(this ZNet znet)
         {
             return !znet.IsServer() && !znet.IsDedicated();
         }
@@ -65,13 +65,9 @@
             {
                 return ZNetInstanceType.Local;
             }
+            
+            return znet.IsClientInstance() ? ZNetInstanceType.Client : ZNetInstanceType.Server;
 
-            if (znet.IsClientInstance())
-            {
-                return ZNetInstanceType.Client;
-            }
-
-            return ZNetInstanceType.Server;
         }
 
         /// <summary>
