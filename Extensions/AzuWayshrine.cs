@@ -29,7 +29,9 @@ namespace Wayshrine
         public bool Interact(Humanoid character, bool hold, bool alt)
         {
             if (hold)
-                return false;
+            {
+                return true;
+            }
 
             Player p = Player.m_localPlayer;
             PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
@@ -40,10 +42,12 @@ namespace Wayshrine
                 GameObject prefab3 = ZNetScene.instance.GetPrefab("vfx_bifrost");
                 GameObject prefab4 = ZNetScene.instance.GetPrefab("sfx_thunder");
                 if (!Equals(prefab2, null) && !Equals(prefab3, null))
+                {
                     if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                     {
                         //GameObject.Instantiate<GameObject>(prefab1, Player.m_localPlayer.transform.position, Quaternion.identity);
-                        Instantiate(prefab2, Player.m_localPlayer.transform.position,
+                        Vector3 position = Player.m_localPlayer.transform.position;
+                        Instantiate(prefab2, position,
                             Quaternion.identity);
 
                         // Tell it to respect the default game mixer to not blow your fucking ear drums out.
@@ -58,12 +62,13 @@ namespace Wayshrine
                                 "AzuWayshrine: AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
                         }
 
-                        Instantiate(prefab3, Player.m_localPlayer.transform.position,
+                        Instantiate(prefab3, position,
                             Quaternion.identity);
                     }
+                }
 
                 character.Message(MessageHud.MessageType.Center, Util.GetLocalized("$activated_heimdall"));
-                var spawn = playerProfile.HaveCustomSpawnPoint()
+                Vector3 spawn = playerProfile.HaveCustomSpawnPoint()
                     ? playerProfile.GetCustomSpawnPoint()
                     : playerProfile.GetHomePoint();
                 p.TeleportTo(spawn, Quaternion.identity, false);
@@ -73,12 +78,12 @@ namespace Wayshrine
 
             MinimapPatches.IsHeimdallMode = true;
             Minimap.instance.ShowPointOnMap(transform.position);
-            foreach (var kv in Wayshrines)
+            foreach (KeyValuePair<Vector3, WayshrineInfo> kv in Wayshrines)
             {
                 /* This code will add all the correct pins to the map for each different type of shrine. */
                 WayshrineCustomBehaviour wayshrine = kv.Value.prefab.GetComponent<WayshrineCustomBehaviour>();
                 //WayshrinePlugin.waylogger.LogDebug(wayshrine.name.ToLower());
-                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType, Util.GetLocalized(kv.Value.prefab.GetComponent<Piece>().m_name), false, false, 0));
+                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType, Util.GetLocalized(kv.Value.prefab.GetComponent<Piece>().m_name), false, false));
             }
 
             return false;
@@ -95,37 +100,30 @@ namespace Wayshrine
             piece = GetComponent<Piece>();
             _zNetView = GetComponent<ZNetView>();
 
-            if (_zNetView.GetZDO() is ZDO { m_ownerRevision: 0 } zdo)
+            if (_zNetView.GetZDO() is ZDO zdo && zdo.IsValid())
             {
-                zdo.IncreseOwnerRevision();
+                if (zdo.m_ownerRevision == 0)
+                {
+                    zdo.IncreseOwnerRevision();
 
-                ZPackage package = new();
-                package.Write(1);
-                package.Write(transform.position);
-                package.Write(zdo.GetPrefab());
-                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, "RequestWayZDOs", package);
+                    Util.sendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
+                }
+            }
+            else
+            {
+                Destroy(this);
             }
         }
 
         public void OnDestroy()
         {
-            Minimap.PinData pinData = new();
-            pinData.m_type = this.pinType;
-            pinData.m_name = this.name;
-            pinData.m_pos = transform.position;
-            pinData.m_icon = Minimap.instance.GetSprite(this.pinType);
-            pinData.m_save = false;
-            pinData.m_checked = false;
-            pinData.m_ownerID = 0L;
-            Minimap.instance.RemovePin(pinData);
-            pins.Remove(pinData);
-            Util.sendWayshrines(0L);
-            if (_zNetView.GetZDO() is ZDO { m_ownerRevision: 0 } zdo)
+            if (Wayshrines.ContainsKey(transform.position))
             {
                 ZPackage package = new();
                 package.Write(1);
                 package.Write(transform.position);
-                package.Write(zdo.GetPrefab());
+                package.Write(transform.rotation);
+                package.Write(0);
                 ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, "RequestWayZDOs", package);
             }
         }
@@ -138,7 +136,7 @@ namespace Wayshrine
                 wayshrinePiece.m_canBeRemoved = true;
             }
 
-            Util.sendWayshrines(0);
+            //Util.sendWayshrines(0);
         }
 
         public struct WayshrineInfo

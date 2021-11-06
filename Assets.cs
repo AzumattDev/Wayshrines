@@ -6,19 +6,19 @@ using UnityEngine;
 
 namespace Wayshrine
 {
-    public class Assets
+    public static class Assets
     {
-        public static int
+        private static int
             MinimapPinId =
                 180; //start at 180 just in case other mods or the devs want to add more pins. Hopefully dodges a conflict
 
         public static GameObject wayshrine = null!;
-        public static GameObject wayshrine_ash = null!;
-        public static GameObject wayshrine_plains = null!;
-        public static GameObject wayshrine_frost = null!;
-        public static GameObject wayshrine_skull = null!;
-        public static GameObject wayshrine_skull_2 = null!;
-        public static GameObject vfx_bifrost = null!;
+        private static GameObject wayshrine_ash = null!;
+        private static GameObject wayshrine_plains = null!;
+        private static GameObject wayshrine_frost = null!;
+        private static GameObject wayshrine_skull = null!;
+        private static GameObject wayshrine_skull_2 = null!;
+        private static GameObject vfx_bifrost = null!;
         public static readonly List<GameObject> wayshrinesList = new();
         private static bool AssetsLoaded;
 
@@ -32,7 +32,7 @@ namespace Wayshrine
             return AssetBundle.LoadFromStream(stream);
         }
 
-        public static void InitAssets(GameObject wayshrineGO)
+        private static void InitAssets(GameObject wayshrineGO)
         {
             WayshrineCustomBehaviour wayshrineComponent = wayshrineGO.AddComponent<WayshrineCustomBehaviour>();
             var piece = wayshrineGO.GetComponent<Piece>();
@@ -65,7 +65,7 @@ namespace Wayshrine
             InitAssets(wayshrine_skull);
             InitAssets(wayshrine_skull_2);
 
-            assetBundle?.Unload(false);
+            assetBundle.Unload(false);
             AssetsLoaded = true;
         }
 

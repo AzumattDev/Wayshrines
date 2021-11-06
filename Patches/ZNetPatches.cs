@@ -51,17 +51,15 @@ namespace Wayshrine
             ZRoutedRpc.instance.Register("WayshrineAdminGetEvent", new Action<long, ZPackage>(AdminGET.RPC_isAdminAccess));
         }
     }
-
-
+    
     public class AdminGET
     {
         private static bool _isAdmin = false;
         private static PieceTable? _hammer;
         public static void RPC_isAdminAccess(long sender, ZPackage pAzu)
         {
-            if (pAzu == null || pAzu.Size() <= 0) return;
-            var getAdm = pAzu.ReadBool();
-            ZNetPeer peerSteamID = ZNet.instance.GetPeer(sender);
+            if (pAzu.Size() <= 0) return;
+            bool getAdm = pAzu.ReadBool();
             WayshrinePlugin.isAdmin = getAdm;
             WayshrinePlugin.waylogger.LogMessage($"ADMIN DETECTED: {Player.m_localPlayer.GetPlayerName()}");
             if (!WayshrinePlugin.isAdmin || WayshrinePlugin.hammerAdded) return;
@@ -73,7 +71,7 @@ namespace Wayshrine
                 _hammer = table;
                 break;
             }
-            if (_hammer is not null && _hammer.m_pieces.Contains(Assets.wayshrine)) return;
+            if (_hammer is null || _hammer.m_pieces.Contains(Assets.wayshrine)) return;
             foreach (GameObject wayshrine in Assets.wayshrinesList)
             {
                 _hammer.m_pieces.Add(wayshrine);
@@ -93,7 +91,7 @@ namespace Wayshrine
             ZPackage newPAzu = new();
             WayshrinePlugin.waylogger.LogMessage($"ADMIN DETECTED: {peerSteamId} a.k.a. {peer.m_playerName}");
             newPAzu.Write(_isAdmin);
-            ZRoutedRpc.instance.InvokeRoutedRPC(peer.m_uid, "WayshrineAdminGetEvent", new object[] { newPAzu });
+            ZRoutedRpc.instance.InvokeRoutedRPC(peer.m_uid, "WayshrineAdminGetEvent", newPAzu);
         }
     }
 }

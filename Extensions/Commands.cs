@@ -21,7 +21,7 @@ namespace Wayshrine
                 {
                     ZRoutedRpc.instance.InvokeRoutedRPC("DeleteWayZDOs", new ZPackage());
                     args.Context?.AddString(
-                            $"<color=yellow>Delete Wayshrines called. Trying to delete all ZDOs</color>");
+                            "<color=yellow>Delete Wayshrines called. Trying to delete all ZDOs</color>");
                     ZDOMan.instance.SendDestroyed();
                 }, true);
         }

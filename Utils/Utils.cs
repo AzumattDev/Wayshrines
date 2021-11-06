@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Wayshrine
 {
-    public class Util
+    public static class Util
     {
         public static string GetLocalized(string param)
         {
@@ -14,8 +14,15 @@ namespace Wayshrine
         {
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
+            {
                 ZDOMan.instance.GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
+            }
 
+            sendWayshrines(target, wayshrineZDOs);
+        }
+
+        public static void sendWayshrines(long target, List<ZDO> wayshrineZDOs)
+        {
             ZPackage package = new();
             package.Write(wayshrineZDOs.Count);
             foreach (ZDO zdo in wayshrineZDOs)
@@ -30,27 +37,34 @@ namespace Wayshrine
 
         public static void readWayshrines(long target, ZPackage package)
         {
-            for (var i = package.ReadInt(); i > 0; --i)
+            for (int i = package.ReadInt(); i > 0; --i)
             {
-                var position = package.ReadVector3();
-                var rotation = package.ReadQuaternion();
-                var prefabId = package.ReadInt();
+                Vector3 position = package.ReadVector3();
+                Quaternion rotation = package.ReadQuaternion();
+                int prefabId = package.ReadInt();
                 if (prefabId == 0)
+                {
                     WayshrineCustomBehaviour.Wayshrines.Remove(position);
+                }
                 else
+                {
                     WayshrineCustomBehaviour.Wayshrines[position] = new WayshrineCustomBehaviour.WayshrineInfo
-                    { prefab = ZNetScene.instance.GetPrefab(prefabId), rotation = rotation };
+                        { prefab = ZNetScene.instance.GetPrefab(prefabId), rotation = rotation };
+                }
             }
         }
-
-
+        
         public static void DeleteWayZDOs(long sender, ZPackage pkg)
         {
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
+            {
                 ZDOMan.instance.GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
+            }
             if (wayshrineZDOs.Count == 0)
+            {
                 return;
+            }
             foreach (ZDO zdo in wayshrineZDOs) ZDOMan.instance.m_destroySendList.Add(zdo.m_uid);
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) Minimap.instance.RemovePin(pinData);
 

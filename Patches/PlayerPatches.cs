@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using UnityEngine;
-using Wayshrine.Extensions;
 
 namespace Wayshrine
 {
@@ -12,7 +11,6 @@ namespace Wayshrine
 
         //Second Backpack container/inv
         private static Inventory _backpackInventory2;
-
 
         private static int _bagininv;
 
