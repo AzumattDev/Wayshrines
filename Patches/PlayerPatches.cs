@@ -25,14 +25,14 @@ namespace Wayshrine
                 {
                     WayshrinePlugin.isAdmin = true;
 #if DEBUG
-                    WayshrinePlugin.waylogger.LogInfo("Granting Admin priv for local player");
+                    WayshrinePlugin.waylogger.LogInfo("Local Play Detected setting Admin: True");
 #endif
                 }
 
                 if (!WayshrinePlugin.isAdmin || WayshrinePlugin.hammerAdded) return;
                 foreach (var o in Resources.FindObjectsOfTypeAll(typeof(PieceTable)))
                 {
-                    var table = (PieceTable)o;
+                    PieceTable? table = (PieceTable)o;
                     string name = table.gameObject.name;
                     if (!name.Contains("_HammerPieceTable")) continue;
                     _hammer = table;

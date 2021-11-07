@@ -35,6 +35,14 @@ namespace Wayshrine
 
             Player p = Player.m_localPlayer;
             PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
+            if (!Player.m_localPlayer.IsTeleportable())
+            {
+                if (!WayshrinePlugin.teleportable.Value)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
+                    return true;
+                }
+            }
             if (WayshrinePlugin.OriginalFunc is { Value: true })
             {
                 GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
@@ -135,8 +143,8 @@ namespace Wayshrine
                 wayshrinePiece = GetComponent<Piece>();
                 wayshrinePiece.m_canBeRemoved = true;
             }
-
-            //Util.sendWayshrines(0);
+            /* It appears Util.sendWayshrines(0) is needed here, otherwise the map pins disappear from the map after a distant teleport */
+            Util.sendWayshrines(0);
         }
 
         public struct WayshrineInfo

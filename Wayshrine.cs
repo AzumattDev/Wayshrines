@@ -11,12 +11,12 @@ using UnityEngine;
 
 namespace Wayshrine
 {
-    [BepInPlugin(ModGUID, "AzuWayshrine", ModVersion)]
+    [BepInPlugin(ModGUID, ModName, ModVersion)]
     public class WayshrinePlugin : BaseUnityPlugin
     {
-        private const string ModName = "Wayshrine";
-        private const string ModVersion = "1.0.6";
-        private const string ModGUID = "azumatt.Wayshrine";
+        internal const string ModName = "AzuWayshrine";
+        internal const string ModVersion = "1.0.6";
+        internal const string ModGUID = "azumatt.Wayshrine";
         public static bool isAdmin = false;
         public static bool hammerAdded = false;
         public static Sprite way_icon = null!;
@@ -36,6 +36,7 @@ namespace Wayshrine
         private static ConfigEntry<bool>? ServerConfigLocked;
         public static ConfigEntry<bool>? OriginalFunc;
         public static ConfigEntry<bool>? DisableBifrostEffect;
+        public static ConfigEntry<bool>? teleportable;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
             bool synchronizedSetting = true)
@@ -70,6 +71,7 @@ namespace Wayshrine
                 "Use the original functionality of the Wayshrines, unlink them and only take you to spawn or home");
             DisableBifrostEffect = config("General", "Disable Bifrost Effect", false,
                 "Disable the bifrost effect on teleport");
+            teleportable = config("General", "AllowTeleport", false, "Enable teleport with restricted items");
 
 
             harmony.PatchAll(assembly);

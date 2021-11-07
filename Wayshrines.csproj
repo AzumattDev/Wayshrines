@@ -95,6 +95,9 @@
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Valheim\unstripped_corlib\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.UI.dll</HintPath>
     </Reference>
@@ -106,6 +109,7 @@
     <Compile Include="Assets.cs" />
     <Compile Include="Extensions\AzuWayshrine.cs" />
     <Compile Include="Extensions\Commands.cs" />
+    <Compile Include="Extensions\WayEntryDetector.cs" />
     <Compile Include="Extensions\ZNetExt.cs" />
     <Compile Include="Patches\GamePatches.cs" />
     <Compile Include="Patches\MinimapPatches.cs" />

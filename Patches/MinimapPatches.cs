@@ -9,12 +9,6 @@ namespace Wayshrine
     public static class MinimapPatches
     {
         public static bool IsHeimdallMode;
-        public static bool list_populated = false;
-
-        private static void HeimdallMode()
-        {
-            IsHeimdallMode = true;
-        }
 
         private static void LeaveHeimdallMode()
         {
@@ -27,8 +21,11 @@ namespace Wayshrine
         {
             if (!Player.m_localPlayer.IsTeleportable())
             {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
-                return;
+                if (!WayshrinePlugin.teleportable.Value)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
+                    return;
+                }
             }
             
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = true;
@@ -41,7 +38,7 @@ namespace Wayshrine
 
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = false;
 
-            if (!WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
+            if (closestPin == null || !WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
 
             Vector3 position = closestPin.m_pos;
             Quaternion rotation = wayshrine.rotation;
@@ -51,15 +48,12 @@ namespace Wayshrine
             await Task.Delay(TimeSpan.FromSeconds(2));
             Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Heimdall opens the Bifrost: Teleporting");
             await Task.Delay(TimeSpan.FromSeconds(2));
-            //GameObject prefab1 = ZNetScene.instance.GetPrefab("fx_eikthyr_stomp");
             GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
-            //GameObject prefab3 = ZNetScene.instance.GetPrefab("lightningAOE");
             GameObject prefab3 = ZNetScene.instance.GetPrefab("vfx_bifrost");
             GameObject prefab4 = ZNetScene.instance.GetPrefab("sfx_thunder");
             if (!Equals(prefab2, null) && !Equals(prefab3, null))
                 if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                 {
-                    //GameObject.Instantiate<GameObject>(prefab1, Player.m_localPlayer.transform.position, Quaternion.identity);
                     Vector3 position1 = Player.m_localPlayer.transform.position;
                     Object.Instantiate(prefab2, position1,
                         Quaternion.identity);
@@ -79,7 +73,7 @@ namespace Wayshrine
                     GameObject? effect = Object.Instantiate(prefab3, position1,
                         Quaternion.identity);
                     effect.AddComponent<TimedDestruction>().m_timeout = 4;
-                    var effectTD = effect.GetComponent<TimedDestruction>();
+                    TimedDestruction? effectTD = effect.GetComponent<TimedDestruction>();
                     effectTD.m_triggerOnAwake = true;
                 }
 
@@ -113,7 +107,7 @@ namespace Wayshrine
                 }
                 foreach (GameObject wayshrine in Assets.wayshrinesList)
                 {
-                    var pieceIcon = wayshrine.GetComponent<Piece>().m_icon;
+                    Sprite? pieceIcon = wayshrine.GetComponent<Piece>().m_icon;
                     __instance.m_icons.Add(new Minimap.SpriteData
                     {
                         m_name = wayshrine.GetComponent<WayshrineCustomBehaviour>().pinType,
