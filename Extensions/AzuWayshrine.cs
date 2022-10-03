@@ -37,12 +37,20 @@ namespace Wayshrine
             PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
             if (!Player.m_localPlayer.IsTeleportable())
             {
-                if (!WayshrinePlugin.teleportable.Value)
+                if (!WayshrinePlugin.Teleportable.Value)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
                     return true;
                 }
             }
+
+            if (!MinimapPatches.CheckTeleportCost())
+            {
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center,
+                    $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches._itemName}");
+                return true;
+            }
+
             if (WayshrinePlugin.OriginalFunc is { Value: true })
             {
                 GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
@@ -89,9 +97,10 @@ namespace Wayshrine
             foreach (KeyValuePair<Vector3, WayshrineInfo> kv in Wayshrines)
             {
                 /* This code will add all the correct pins to the map for each different type of shrine. */
-                WayshrineCustomBehaviour wayshrine = kv.Value.prefab.GetComponent<WayshrineCustomBehaviour>();
+                WayshrineCustomBehaviour wayshrine = kv.Value.Prefab.GetComponent<WayshrineCustomBehaviour>();
                 //WayshrinePlugin.waylogger.LogDebug(wayshrine.name.ToLower());
-                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType, Util.GetLocalized(kv.Value.prefab.GetComponent<Piece>().m_name), false, false));
+                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType,
+                    Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
             }
 
             return false;
@@ -114,12 +123,12 @@ namespace Wayshrine
                 {
                     zdo.IncreseOwnerRevision();
 
-                    Util.sendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
+                    Util.SendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
                 }
             }
             else
             {
-                Destroy(this);
+                DestroyImmediate(this);
             }
         }
 
@@ -143,14 +152,15 @@ namespace Wayshrine
                 wayshrinePiece = GetComponent<Piece>();
                 wayshrinePiece.m_canBeRemoved = true;
             }
+
             /* It appears Util.sendWayshrines(0) is needed here, otherwise the map pins disappear from the map after a distant teleport */
-            Util.sendWayshrines(0);
+            Util.SendWayshrines(0);
         }
 
         public struct WayshrineInfo
         {
-            public GameObject prefab;
-            public Quaternion rotation;
+            public GameObject Prefab;
+            public Quaternion Rotation;
         }
     }
 }

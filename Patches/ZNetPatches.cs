@@ -2,6 +2,7 @@
 using HarmonyLib;
 using JetBrains.Annotations;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Wayshrine
 {
@@ -13,7 +14,7 @@ namespace Wayshrine
         {
             if (__instance.IsServer())
             {
-                Util.sendWayshrines(__instance.GetPeer(rpc).m_uid);
+                Util.SendWayshrines(__instance.GetPeer(rpc).m_uid);
             }
         }
     }
@@ -23,7 +24,7 @@ namespace Wayshrine
     {
         private static void Postfix()
         {
-            ZRoutedRpc.instance.Register<ZPackage>("RequestWayZDOs", Util.readWayshrines);
+            ZRoutedRpc.instance.Register<ZPackage>("RequestWayZDOs", Util.ReadWayshrines);
 
             ZRoutedRpc.instance.Register<ZPackage>("DeleteWayZDOs", Util.DeleteWayZDOs);
         }
@@ -63,9 +64,9 @@ namespace Wayshrine
             WayshrinePlugin.isAdmin = getAdm;
             WayshrinePlugin.waylogger.LogMessage($"ADMIN DETECTED: {Player.m_localPlayer.GetPlayerName()}");
             if (!WayshrinePlugin.isAdmin || WayshrinePlugin.hammerAdded) return;
-            foreach (var o in Resources.FindObjectsOfTypeAll(typeof(PieceTable)))
+            foreach (Object? o in Resources.FindObjectsOfTypeAll(typeof(PieceTable)))
             {
-                var table = (PieceTable)o;
+                PieceTable? table = (PieceTable)o;
                 string name = table.gameObject.name;
                 if (!name.Contains("_HammerPieceTable")) continue;
                 _hammer = table;
@@ -79,7 +80,7 @@ namespace Wayshrine
             WayshrinePlugin.hammerAdded = true;
         }
 
-        private static void RPC_Char(ZNet __instance, ZRpc rpc)
+        internal static void RPC_Char(ZNet __instance, ZRpc rpc)
         {
             if (!__instance.IsDedicated() && !__instance.IsServer())
             {

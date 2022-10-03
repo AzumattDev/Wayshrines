@@ -9,6 +9,7 @@ namespace Wayshrine
     public static class MinimapPatches
     {
         public static bool IsHeimdallMode;
+        internal static string? _itemName;
 
         private static void LeaveHeimdallMode()
         {
@@ -21,13 +22,20 @@ namespace Wayshrine
         {
             if (!Player.m_localPlayer.IsTeleportable())
             {
-                if (!WayshrinePlugin.teleportable.Value)
+                if (!WayshrinePlugin.Teleportable.Value)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
                     return;
                 }
             }
-            
+
+            if (!CheckTeleportCost())
+            {
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center,
+                    $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {_itemName}");
+                return;
+            }
+
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = true;
 
             Minimap minimap = Minimap.instance;
@@ -38,10 +46,11 @@ namespace Wayshrine
 
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = false;
 
-            if (closestPin == null || !WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
+            if (closestPin == null || !WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos,
+                    out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
 
             Vector3 position = closestPin.m_pos;
-            Quaternion rotation = wayshrine.rotation;
+            Quaternion rotation = wayshrine.Rotation;
             Vector3 pos = position + rotation.normalized * Vector3.forward + Vector3.up;
             Minimap.instance.SetMapMode(Minimap.MapMode.Small);
             LeaveHeimdallMode();
@@ -86,6 +95,34 @@ namespace Wayshrine
             p.m_lastGroundTouch = 0f;
         }
 
+        internal static bool CheckTeleportCost()
+        {
+            if (WayshrinePlugin.ShouldCost.Value)
+            {
+                ItemDrop? item = ObjectDB.instance.GetItemPrefab(WayshrinePlugin.ChargeItem.Value)
+                    .GetComponent<ItemDrop>();
+                if (item)
+                {
+                    _itemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
+                    if (Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >=
+                        WayshrinePlugin.ChargeItemAmount.Value)
+                    {
+                        Player.m_localPlayer.GetInventory().RemoveItem(item.m_itemData.m_shared.m_name,
+                            WayshrinePlugin.ChargeItemAmount.Value);
+                        Player.m_localPlayer.ShowRemovedMessage(item.m_itemData,
+                            WayshrinePlugin.ChargeItemAmount.Value);
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.SetMapMode))]
         public class Minimap_SetMapMode_Patch
         {
@@ -105,6 +142,7 @@ namespace Wayshrine
                 {
                     __instance.m_visibleIconTypes[i] = true;
                 }
+
                 foreach (GameObject wayshrine in Assets.wayshrinesList)
                 {
                     Sprite? pieceIcon = wayshrine.GetComponent<Piece>().m_icon;
@@ -128,6 +166,7 @@ namespace Wayshrine
                 {
                     return true;
                 }
+
                 DoBiFrostStuff();
                 return false;
             }

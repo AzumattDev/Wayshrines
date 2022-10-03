@@ -10,7 +10,7 @@ namespace Wayshrine
             return Localization.instance.Localize(param);
         }
 
-        public static void sendWayshrines(long target)
+        public static void SendWayshrines(long target)
         {
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
@@ -18,10 +18,10 @@ namespace Wayshrine
                 ZDOMan.instance.GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
             }
 
-            sendWayshrines(target, wayshrineZDOs);
+            SendWayshrines(target, wayshrineZDOs);
         }
 
-        public static void sendWayshrines(long target, List<ZDO> wayshrineZDOs)
+        public static void SendWayshrines(long target, List<ZDO> wayshrineZDOs)
         {
             ZPackage package = new();
             package.Write(wayshrineZDOs.Count);
@@ -35,7 +35,7 @@ namespace Wayshrine
             ZRoutedRpc.instance.InvokeRoutedRPC(target, "RequestWayZDOs", package);
         }
 
-        public static void readWayshrines(long target, ZPackage package)
+        public static void ReadWayshrines(long target, ZPackage package)
         {
             for (int i = package.ReadInt(); i > 0; --i)
             {
@@ -49,11 +49,12 @@ namespace Wayshrine
                 else
                 {
                     WayshrineCustomBehaviour.Wayshrines[position] = new WayshrineCustomBehaviour.WayshrineInfo
-                        { prefab = ZNetScene.instance.GetPrefab(prefabId), rotation = rotation };
+                        { Prefab = ZNetScene.instance.GetPrefab(prefabId), Rotation = rotation };
                 }
             }
         }
         
+        // ReSharper disable once InconsistentNaming
         public static void DeleteWayZDOs(long sender, ZPackage pkg)
         {
             List<ZDO> wayshrineZDOs = new();
@@ -69,7 +70,7 @@ namespace Wayshrine
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) Minimap.instance.RemovePin(pinData);
 
             WayshrineCustomBehaviour.pins.Clear();
-            sendWayshrines(0);
+            SendWayshrines(0);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Wayshrine
                 /* to keep the pins updated and the interaction with the wayshrine instant, we will RPC the location of all wayshrines to the client on connection
                     AKA HERE...
                     */
-                Util.sendWayshrines(0);
+                Util.SendWayshrines(0);
         }
     }
 }

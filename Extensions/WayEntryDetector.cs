@@ -18,7 +18,7 @@ public class WayEntryDetector : MonoBehaviour
         PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
         if (!Player.m_localPlayer.IsTeleportable())
         {
-            if (!WayshrinePlugin.teleportable.Value)
+            if (!WayshrinePlugin.Teleportable.Value)
             {
                 Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
                 return;
@@ -70,10 +70,10 @@ public class WayEntryDetector : MonoBehaviour
             .Wayshrines)
         {
             /* This code will add all the correct pins to the map for each different type of shrine. */
-            WayshrineCustomBehaviour wayshrine = kv.Value.prefab.GetComponent<WayshrineCustomBehaviour>();
+            WayshrineCustomBehaviour wayshrine = kv.Value.Prefab.GetComponent<WayshrineCustomBehaviour>();
             //WayshrinePlugin.waylogger.LogDebug(wayshrine.name.ToLower());
             Wayshrine.WayshrineCustomBehaviour.pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType,
-                Util.GetLocalized(kv.Value.prefab.GetComponent<Piece>().m_name), false, false));
+                Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
         }
     }
 

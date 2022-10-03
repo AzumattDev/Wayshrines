@@ -3,7 +3,7 @@
     /// <summary>
     ///     Extends ZNet with a clear diversion between local, client and server instances.
     /// </summary>
-    public static class ZNetExt
+    internal static class ZNetExt
     {
         /// <summary>
         ///     Possible states of the game regarding to networking.
@@ -14,10 +14,12 @@
             ///     A local game instance playing on a local world.
             /// </summary>
             Local,
+
             /// <summary>
             ///     A local game instance playing on a dedicated server.
             /// </summary>
             Client,
+
             /// <summary>
             ///     A dedicated server instance.
             /// </summary>
@@ -39,7 +41,7 @@
         /// </summary>
         /// <param name="znet"></param>
         /// <returns></returns>
-        private static bool IsClientInstance(this ZNet znet)
+        public static bool IsClientInstance(this ZNet znet)
         {
             return !znet.IsServer() && !znet.IsDedicated();
         }
@@ -65,9 +67,8 @@
             {
                 return ZNetInstanceType.Local;
             }
-            
-            return znet.IsClientInstance() ? ZNetInstanceType.Client : ZNetInstanceType.Server;
 
+            return znet.IsClientInstance() ? ZNetInstanceType.Client : ZNetInstanceType.Server;
         }
 
         /// <summary>
@@ -78,7 +79,18 @@
         /// <returns></returns>
         public static bool IsAdmin(this ZNet znet, long uid)
         {
-            return znet.m_adminList.Contains(znet.GetPeer(uid).m_socket.GetHostName());
+            return znet.ListContainsId(znet.m_adminList, znet.GetPeer(uid).m_socket.GetHostName());
+        }
+
+        /// <summary>
+        /// Determine if a peer uid is in the admin list on the current <see cref="ZNet"/>
+        /// </summary>
+        /// <param name="znet"></param>
+        /// <param name="rpc"></param>
+        /// <returns></returns>
+        public static bool IsAdmin(this ZNet znet, ZRpc rpc)
+        {
+            return znet.ListContainsId(znet.m_adminList, znet.GetPeer(rpc).m_socket.GetHostName());
         }
     }
 }

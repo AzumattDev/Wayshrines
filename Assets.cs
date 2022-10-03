@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
@@ -24,18 +25,20 @@ namespace Wayshrine
 
         private static AssetBundle GetAssetBundleFromResources(string filename)
         {
-            var execAssembly = Assembly.GetExecutingAssembly();
-            var resourceName = execAssembly.GetManifestResourceNames()
+            Assembly execAssembly = Assembly.GetExecutingAssembly();
+            string resourceName = execAssembly.GetManifestResourceNames()
                 .Single(str => str.EndsWith(filename));
 
-            using var stream = execAssembly.GetManifestResourceStream(resourceName);
+            using Stream? stream = execAssembly.GetManifestResourceStream(resourceName);
             return AssetBundle.LoadFromStream(stream);
         }
 
         private static void InitAssets(GameObject wayshrineGO)
         {
             WayshrineCustomBehaviour wayshrineComponent = wayshrineGO.AddComponent<WayshrineCustomBehaviour>();
-            var piece = wayshrineGO.GetComponent<Piece>();
+            //var location = wayshrineGO.AddComponent<Location>();
+
+            Piece? piece = wayshrineGO.GetComponent<Piece>();
             //piece.m_name = name;
             piece.m_description = "Call to Heimdall, for he shall take you home";
             piece.m_canBeRemoved = false;
@@ -83,5 +86,70 @@ namespace Wayshrine
                 return true;
             }
         }
+
+        /*[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.SetupLocations))]
+        static class ZoneSystem_SetupLocations_Patch
+        {
+            static void Prefix(ZoneSystem __instance)
+            {
+                foreach (GameObject wayshrine in wayshrinesList)
+                {
+                    Heightmap.Biome biome;
+                    if (wayshrine.name.Contains("Frost"))
+                    {
+                        biome = Heightmap.Biome.DeepNorth;
+                    }
+                    else if (wayshrine.name.Contains("Ashland"))
+                    {
+                        biome = Heightmap.Biome.AshLands;
+                    }
+                    else if (wayshrine.name.Contains("Plains"))
+                    {
+                        biome = Heightmap.Biome.Plains;
+                    }
+                    else if (wayshrine.name == "Wayshrine")
+                    {
+                        biome = Heightmap.Biome.BlackForest;
+                    }
+                    else if (wayshrine.name.Contains("Skull_2"))
+                    {
+                        biome = Heightmap.Biome.Mistlands;
+                    }
+                    else
+                    {
+                        biome = Heightmap.Biome.Swamp;
+                    }
+
+                    Location wayshrineLocation = wayshrine.GetComponent<Location>();
+                    wayshrineLocation.m_clearArea = true;
+                    wayshrineLocation.m_exteriorRadius = 16;
+                    wayshrineLocation.m_noBuild = true;
+
+                    foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
+                    {
+                        if (gameObject.name == "_Locations" &&
+                            gameObject.transform.Find("Misc") is Transform locationMisc)
+                        {
+                            GameObject altarCopy = Object.Instantiate(wayshrine, locationMisc, true);
+                            altarCopy.name = wayshrine.name;
+                            __instance.m_locations.Add(new ZoneSystem.ZoneLocation
+                            {
+                                m_randomRotation = true,
+                                m_minAltitude = 10,
+                                m_maxAltitude = 1000,
+                                m_maxDistance = 1500,
+                                m_quantity = 5,
+                                m_biome = Heightmap.Biome.Meadows,
+                                m_prefabName = wayshrine.name,
+                                m_enable = true,
+                                m_minDistanceFromSimilar = 800,
+                                m_prioritized = true,
+                                m_forestTresholdMax = 5
+                            });
+                        }
+                    }
+                }
+            }
+        }*/
     }
 }

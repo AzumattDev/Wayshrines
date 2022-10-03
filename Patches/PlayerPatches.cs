@@ -30,20 +30,15 @@ namespace Wayshrine
                 }
 
                 if (!WayshrinePlugin.isAdmin || WayshrinePlugin.hammerAdded) return;
-                foreach (var o in Resources.FindObjectsOfTypeAll(typeof(PieceTable)))
-                {
-                    PieceTable? table = (PieceTable)o;
-                    string name = table.gameObject.name;
-                    if (!name.Contains("_HammerPieceTable")) continue;
-                    _hammer = table;
-                    break;
-                }
+                GameObject? hammer = ZNetScene.instance.GetPrefab("Hammer");
+                PieceTable? hammerTable = hammer.GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces;
+                _hammer = hammerTable;
 
                 if (_hammer is not null && _hammer.m_pieces.Contains(Assets.wayshrine)) return;
                 foreach (GameObject wayshrine in Assets.wayshrinesList)
                 {
                     _hammer?.m_pieces.Add(wayshrine);
-                    var piece = wayshrine.GetComponent<Piece>();
+                    Piece? piece = wayshrine.GetComponent<Piece>();
                     piece.m_canBeRemoved = true;
                 }
 
