@@ -28,21 +28,25 @@ namespace Wayshrine
 
         private static string ConfigFileName = ModGUID + ".cfg";
         private static string ConfigFileFullPath = Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
+
+        private static string LangFileFullPath =
+            Paths.ConfigPath + Path.DirectorySeparatorChar + ModGUID + ".Localization.cfg";
+
         public static readonly ManualLogSource waylogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
 
         private static readonly ConfigSync configSync = new(ModGUID)
             { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
-        private static ConfigFile localizationFile = null!;
-        private static readonly Dictionary<string, ConfigEntry<string>> m_localizedStrings = new();
+        private static ConfigFile _localizationFile = null!;
+        private static readonly Dictionary<string, ConfigEntry<string>> MLocalizedStrings = new();
 
-        private static ConfigEntry<bool>? _serverConfigLocked;
-        public static ConfigEntry<bool>? OriginalFunc;
-        public static ConfigEntry<bool>? DisableBifrostEffect;
-        public static ConfigEntry<bool>? Teleportable;
-        public static ConfigEntry<bool>? ShouldCost;
-        public static ConfigEntry<string>? ChargeItem;
-        public static ConfigEntry<int> ChargeItemAmount= null!;
+        private static ConfigEntry<bool> _serverConfigLocked = null!;
+        public static ConfigEntry<bool> OriginalFunc = null!;
+        public static ConfigEntry<bool> DisableBifrostEffect = null!;
+        public static ConfigEntry<bool> Teleportable = null!;
+        public static ConfigEntry<bool> ShouldCost = null!;
+        public static ConfigEntry<string> ChargeItem = null!;
+        public static ConfigEntry<int> ChargeItemAmount = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
             bool synchronizedSetting = true)
@@ -65,7 +69,7 @@ namespace Wayshrine
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             Harmony harmony = new(ModGUID);
-            localizationFile =
+            _localizationFile =
                 new ConfigFile(
                     Path.Combine(Path.GetDirectoryName(Config.ConfigFilePath)!, ModGUID + ".Localization.cfg"), false);
             Assets.LoadAssets();
@@ -88,17 +92,12 @@ namespace Wayshrine
 
             SetupWatcher();
             harmony.PatchAll(assembly);
-            MethodInfo methodInfo = AccessTools.Method(typeof(ZNet), nameof(ZNet.RPC_CharacterID),
-                new[] { typeof(ZRpc), typeof(ZDOID) });
-            harmony.Patch(methodInfo, null,
-                new HarmonyMethod(AccessTools.Method(typeof(AdminGET), nameof(AdminGET.RPC_Char),
-                    new[] { typeof(ZNet), typeof(ZRpc) })));
             Localize();
         }
 
         public void OnDestroy()
         {
-            localizationFile.Save();
+            _localizationFile.Save();
             Config.Save();
         }
 
@@ -119,19 +118,19 @@ namespace Wayshrine
             }
             catch (Exception ex)
             {
-                waylogger.LogError($"{ex}");
+                waylogger.LogError($"Localizing your values failed! {ex}");
             }
         }
 
         private static void LocalizeWord(string key, string val)
         {
-            if (!m_localizedStrings.ContainsKey(key))
+            if (!MLocalizedStrings.ContainsKey(key))
             {
                 Localization? loc = Localization.instance;
                 string? langSection = loc.GetSelectedLanguage();
-                ConfigEntry<string>? configEntry = localizationFile.Bind(langSection, key, val);
+                ConfigEntry<string>? configEntry = _localizationFile.Bind(langSection, key, val);
                 Localization.instance.AddWord(key, configEntry.Value);
-                m_localizedStrings.Add(key, configEntry);
+                MLocalizedStrings.Add(key, configEntry);
             }
         }
 
@@ -144,6 +143,15 @@ namespace Wayshrine
             watcher.IncludeSubdirectories = true;
             watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
             watcher.EnableRaisingEvents = true;
+
+
+            FileSystemWatcher langwatcher = new(Paths.ConfigPath, ModGUID + ".Localization.cfg");
+            langwatcher.Changed += ReadLangValues;
+            langwatcher.Created += ReadLangValues;
+            langwatcher.Renamed += ReadLangValues;
+            langwatcher.IncludeSubdirectories = true;
+            langwatcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
+            langwatcher.EnableRaisingEvents = true;
         }
 
         private void ReadConfigValues(object sender, FileSystemEventArgs e)
@@ -160,38 +168,43 @@ namespace Wayshrine
                 waylogger.LogError("Please check your config entries for spelling and format!");
             }
         }
-    }
 
-    public static class ReflectionExtensions
-    {
-        public static T GetFieldValue<T>(this object obj, string name)
+        private void ReadLangValues(object sender, FileSystemEventArgs e)
         {
-            // Set the flags so that private and public fields from instances will be found
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                               BindingFlags.FlattenHierarchy;
-            var field = obj.GetType().GetField(name, bindingFlags);
-            return (T)field?.GetValue(obj);
-        }
-
-        public static void SetFieldValue<T>(this object obj, string name, object value)
-        {
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                               BindingFlags.FlattenHierarchy;
-            var field = obj.GetType().GetField(name, bindingFlags);
-            field?.SetValue(obj, value);
-        }
-
-        public static object CallMethod(this object obj, string methodName, params object[] args)
-        {
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                               BindingFlags.FlattenHierarchy;
-            var mi = obj.GetType().GetMethod(methodName, bindingFlags);
-            if (mi != null)
+            if (!File.Exists(LangFileFullPath)) return;
+            try
             {
-                return mi.Invoke(obj, args);
-            }
+                waylogger.LogDebug("ReadLangValues called");
+                _localizationFile.Reload();
 
-            return null;
+                foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in _localizationFile)
+                {
+                    ConfigEntryBase configEntryBase = keyValuePair.Value;
+                    if (configEntryBase.SettingType != typeof(string)) continue;
+                    ConfigEntry<string> configEntry = (ConfigEntry<string>)configEntryBase;
+                    if (!MLocalizedStrings.ContainsKey(configEntry.Definition.Key))
+                    {
+                        Localization? loc = Localization.instance;
+                        string? langSection = loc.GetSelectedLanguage();
+                        ConfigEntry<string>? configEntryBind = _localizationFile.Bind(langSection,
+                            configEntry.Definition.Key, configEntry.Value);
+                        Localization.instance.AddWord(configEntry.Definition.Key, configEntryBind.Value);
+                        MLocalizedStrings.Add(configEntry.Definition.Key, configEntryBind);
+                    }
+                    else if (MLocalizedStrings.ContainsKey(configEntry.Definition.Key))
+                    {
+                        Localization.instance.AddWord(configEntry.Definition.Key,
+                            configEntry.Value); // Note, this removes the key first, then adds it again.
+                    }
+                }
+
+                _localizationFile.Save();
+            }
+            catch
+            {
+                waylogger.LogError($"There was an issue loading your {ModGUID}.Localization.cfg");
+                waylogger.LogError("Please check your config entries for spelling and format!");
+            }
         }
     }
 }

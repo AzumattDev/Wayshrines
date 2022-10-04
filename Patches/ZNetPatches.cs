@@ -44,16 +44,16 @@ namespace Wayshrine
         }
     }
 
-    [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start))]
+    /*[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start))]
     public static class GameStartPatch
     {
         private static void Prefix()
         {
             ZRoutedRpc.instance.Register("WayshrineAdminGetEvent", new Action<long, ZPackage>(AdminGET.RPC_isAdminAccess));
         }
-    }
+    }*/
     
-    public class AdminGET
+    /*public class AdminGET
     {
         private static bool _isAdmin = false;
         private static PieceTable? _hammer;
@@ -94,5 +94,5 @@ namespace Wayshrine
             newPAzu.Write(_isAdmin);
             ZRoutedRpc.instance.InvokeRoutedRPC(peer.m_uid, "WayshrineAdminGetEvent", newPAzu);
         }
-    }
+    }*/
 }
