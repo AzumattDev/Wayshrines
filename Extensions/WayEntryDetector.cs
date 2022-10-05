@@ -7,7 +7,7 @@ using Wayshrine;
 [HarmonyPatch]
 public class WayEntryDetector : MonoBehaviour
 {
-    public CapsuleCollider m_wayTELEPORT;
+    public CapsuleCollider m_wayTELEPORT = null!;
 
     private void OnTriggerEnter(Collider collider)
     {

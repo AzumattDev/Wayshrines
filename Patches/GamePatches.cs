@@ -3,7 +3,7 @@
 namespace Wayshrine
 {
     [HarmonyPatch(typeof(Game), nameof(Game._RequestRespawn))]
-    public class SendWayshrines_GameRespawnPatch
+    public class SendWayshrinesGameRespawnPatch
     {
         private static void Postfix(Game __instance)
         {

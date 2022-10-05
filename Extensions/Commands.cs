@@ -24,7 +24,7 @@ namespace Wayshrine
                             "<color=yellow>Delete Wayshrines called. Trying to delete all ZDOs</color>");
                     ZDOMan.instance.SendDestroyed();
                     Util.SendWayshrines(0);
-                }, true);
+                }, true, isNetwork: true, onlyServer: true);
         }
     }
 }

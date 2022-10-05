@@ -7,10 +7,10 @@ namespace Wayshrine
     public class PlayerPatches
     {
         //private static GameObject backpack;
-        private static Inventory _backpackInventory;
+        private static Inventory? _backpackInventory;
 
         //Second Backpack container/inv
-        private static Inventory _backpackInventory2;
+        private static Inventory? _backpackInventory2;
 
         private static int _bagininv;
 
@@ -24,9 +24,7 @@ namespace Wayshrine
                 if (ZNet.instance.IsLocalInstance())
                 {
                     WayshrinePlugin.isAdmin = true;
-#if DEBUG
-                    WayshrinePlugin.waylogger.LogInfo("Local Play Detected setting Admin: True");
-#endif
+                    WayshrinePlugin.waylogger.LogDebug("Local Play Detected setting Admin: True");
                 }
 
                 if (!WayshrinePlugin.isAdmin || WayshrinePlugin.hammerAdded) return;

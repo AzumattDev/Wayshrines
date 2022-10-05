@@ -57,6 +57,10 @@ namespace Wayshrine
         // ReSharper disable once InconsistentNaming
         public static void DeleteWayZDOs(long sender, ZPackage pkg)
         {
+            if (ZNet.m_isServer)
+            {
+                WayshrinePlugin.waylogger.LogMessage("Deleting wayshrines");
+            }
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
             {
