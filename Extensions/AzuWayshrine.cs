@@ -54,14 +54,12 @@ namespace Wayshrine
             if (WayshrinePlugin.OriginalFunc is { Value: true })
             {
                 GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
-                //GameObject prefab3 = ZNetScene.instance.GetPrefab("lightningAOE");
                 GameObject prefab3 = ZNetScene.instance.GetPrefab("vfx_bifrost");
                 GameObject prefab4 = ZNetScene.instance.GetPrefab("sfx_thunder");
                 if (!Equals(prefab2, null) && !Equals(prefab3, null))
                 {
                     if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                     {
-                        //GameObject.Instantiate<GameObject>(prefab1, Player.m_localPlayer.transform.position, Quaternion.identity);
                         Vector3 position = Player.m_localPlayer.transform.position;
                         Instantiate(prefab2, position,
                             Quaternion.identity);
@@ -98,7 +96,6 @@ namespace Wayshrine
             {
                 /* This code will add all the correct pins to the map for each different type of shrine. */
                 WayshrineCustomBehaviour wayshrine = kv.Value.Prefab.GetComponent<WayshrineCustomBehaviour>();
-                //WayshrinePlugin.waylogger.LogDebug(wayshrine.name.ToLower());
                 pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType,
                     Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
             }

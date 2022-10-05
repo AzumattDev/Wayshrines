@@ -114,6 +114,7 @@
     <Compile Include="Patches\GamePatches.cs" />
     <Compile Include="Patches\MinimapPatches.cs" />
     <Compile Include="Patches\PlayerPatches.cs" />
+    <Compile Include="Patches\ZDODataBuffer.cs" />
     <Compile Include="Patches\ZNetPatches.cs" />
     <Compile Include="Utils\AdminUtils.cs" />
     <Compile Include="Utils\Utils.cs" />

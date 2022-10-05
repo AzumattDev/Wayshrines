@@ -97,30 +97,23 @@ namespace Wayshrine
 
         internal static bool CheckTeleportCost()
         {
-            if (WayshrinePlugin.ShouldCost.Value)
+            if (!WayshrinePlugin.ShouldCost.Value) return true;
+            ItemDrop? item = ZNetScene.instance.GetPrefab(WayshrinePlugin.ChargeItem.Value)
+                .GetComponent<ItemDrop>();
+            if (!item) return false;
+            _itemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
+            if (Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >=
+                WayshrinePlugin.ChargeItemAmount.Value)
             {
-                ItemDrop? item = ObjectDB.instance.GetItemPrefab(WayshrinePlugin.ChargeItem.Value)
-                    .GetComponent<ItemDrop>();
-                if (item)
-                {
-                    _itemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
-                    if (Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >=
-                        WayshrinePlugin.ChargeItemAmount.Value)
-                    {
-                        Player.m_localPlayer.GetInventory().RemoveItem(item.m_itemData.m_shared.m_name,
-                            WayshrinePlugin.ChargeItemAmount.Value);
-                        Player.m_localPlayer.ShowRemovedMessage(item.m_itemData,
-                            WayshrinePlugin.ChargeItemAmount.Value);
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                return false;
+                Player.m_localPlayer.GetInventory().RemoveItem(item.m_itemData.m_shared.m_name,
+                    WayshrinePlugin.ChargeItemAmount.Value);
+                Player.m_localPlayer.ShowRemovedMessage(item.m_itemData,
+                    WayshrinePlugin.ChargeItemAmount.Value);
+                return true;
             }
 
-            return true;
+            return false;
+
         }
 
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.SetMapMode))]
