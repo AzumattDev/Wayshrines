@@ -7,7 +7,7 @@ namespace Wayshrine
     {
         private static void Postfix(Game __instance)
         {
-            if (__instance.m_firstSpawn && ZNet.instance.IsServer())
+            if (ZNet.instance.IsServer())
                 /* to keep the pins updated and the interaction with the wayshrine instant, we will RPC the location of all wayshrines to the client on connection
                     AKA HERE...
                     */

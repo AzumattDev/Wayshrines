@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using HarmonyLib;
 using UnityEngine;
 
 namespace Wayshrine
@@ -15,10 +18,20 @@ namespace Wayshrine
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
             {
-                ZDOMan.instance.GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
+                GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
             }
 
             SendWayshrines(target, wayshrineZDOs);
+        }
+        
+        public static void GetAllZDOsWithPrefab(string prefab, List<ZDO> zdos)
+        {
+            int stableHashCode = prefab.GetStableHashCode();
+            foreach (ZDO zdo in ZDOMan.instance.m_objectsByID.Values)
+            {
+                if (zdo.GetPrefab() == stableHashCode)
+                    zdos.Add(zdo);
+            }
         }
 
         public static void SendWayshrines(long target, List<ZDO> wayshrineZDOs)
@@ -53,7 +66,7 @@ namespace Wayshrine
                 }
             }
         }
-        
+
         // ReSharper disable once InconsistentNaming
         public static void DeleteWayZDOs(long sender, ZPackage pkg)
         {
@@ -61,15 +74,18 @@ namespace Wayshrine
             {
                 WayshrinePlugin.waylogger.LogMessage("Deleting wayshrines");
             }
+
             List<ZDO> wayshrineZDOs = new();
             foreach (GameObject gameObject in Assets.wayshrinesList)
             {
-                ZDOMan.instance.GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
+                GetAllZDOsWithPrefab(gameObject.name, wayshrineZDOs);
             }
+
             if (wayshrineZDOs.Count == 0)
             {
                 return;
             }
+
             foreach (ZDO zdo in wayshrineZDOs) ZDOMan.instance.m_destroySendList.Add(zdo.m_uid);
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) Minimap.instance.RemovePin(pinData);
 

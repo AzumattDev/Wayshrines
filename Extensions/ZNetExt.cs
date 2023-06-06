@@ -88,9 +88,9 @@
         /// <param name="znet"></param>
         /// <param name="rpc"></param>
         /// <returns></returns>
-        public static bool IsAdmin(this ZNet znet, ZRpc rpc)
+        public static bool IsAdmin(this ZNet znet, ZRpc? rpc)
         {
-            return znet.ListContainsId(znet.m_adminList, znet.GetPeer(rpc).m_socket.GetHostName());
+            return rpc is null || znet.ListContainsId(znet.m_adminList, znet.GetPeer(rpc).m_socket.GetHostName());
         }
     }
 }

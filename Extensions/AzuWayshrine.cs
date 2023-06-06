@@ -116,9 +116,9 @@ namespace Wayshrine
 
             if (_zNetView.GetZDO() is ZDO zdo && zdo.IsValid())
             {
-                if (zdo.m_ownerRevision == 0)
+                if (zdo.OwnerRevision == 0)
                 {
-                    zdo.IncreseOwnerRevision();
+                    zdo.IncreaseOwnerRevision();
 
                     Util.SendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
                 }

@@ -15,7 +15,7 @@ namespace Wayshrine
     public class WayshrinePlugin : BaseUnityPlugin
     {
         internal const string ModName = "AzuWayshrine";
-        internal const string ModVersion = "1.0.6";
+        internal const string ModVersion = "1.1.0";
         internal const string ModGUID = "Azumatt.Wayshrine";
         public static bool isAdmin = false;
         public static bool hammerAdded = false;
@@ -146,7 +146,7 @@ namespace Wayshrine
 
 
             FileSystemWatcher langwatcher = new(Paths.ConfigPath, ModGUID + ".Localization.cfg");
-            langwatcher.Changed += ReadLangValues;
+            //langwatcher.Changed += ReadLangValues;
             langwatcher.Created += ReadLangValues;
             langwatcher.Renamed += ReadLangValues;
             langwatcher.IncludeSubdirectories = true;
@@ -174,7 +174,7 @@ namespace Wayshrine
             if (!File.Exists(LangFileFullPath)) return;
             try
             {
-                waylogger.LogDebug("ReadLangValues called");
+                //waylogger.LogDebug("ReadLangValues called");
                 _localizationFile.Reload();
 
                 foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in _localizationFile)

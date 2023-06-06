@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using PieceManager;
 using UnityEngine;
 
 namespace Wayshrine
@@ -35,8 +36,9 @@ namespace Wayshrine
 
         private static void InitAssets(GameObject wayshrineGO)
         {
+            MaterialReplacer.RegisterGameObjectForShaderSwap(wayshrineGO, MaterialReplacer.ShaderType.PieceShader);
             WayshrineCustomBehaviour wayshrineComponent = wayshrineGO.AddComponent<WayshrineCustomBehaviour>();
-            //var location = wayshrineGO.AddComponent<Location>();
+            var location = wayshrineGO.AddComponent<Location>();
 
             Piece? piece = wayshrineGO.GetComponent<Piece>();
             //piece.m_name = name;
@@ -78,7 +80,6 @@ namespace Wayshrine
             public static bool Prefix(ZNetScene __instance)
             {
                 if (!AssetsLoaded) LoadAssets();
-
                 foreach (GameObject wayshrine in wayshrinesList) __instance.m_prefabs.Add(wayshrine);
                 __instance.m_prefabs.Add(vfx_bifrost);
 
@@ -87,37 +88,30 @@ namespace Wayshrine
             }
         }
 
-        /*[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.SetupLocations))]
-        static class ZoneSystem_SetupLocations_Patch
+        [HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.SetupLocations))]
+        static class ZoneSystemSetupLocationsPatch
         {
+            static readonly Dictionary<string, Heightmap.Biome> biomeMapping = new()
+            {
+                { "Frost", Heightmap.Biome.DeepNorth },
+                { "Ashland", Heightmap.Biome.AshLands },
+                { "Plains", Heightmap.Biome.Plains },
+                { "Wayshrine", Heightmap.Biome.BlackForest },
+                { "Skull_2", Heightmap.Biome.Mistlands },
+            };
+    
             static void Prefix(ZoneSystem __instance)
             {
                 foreach (GameObject wayshrine in wayshrinesList)
                 {
-                    Heightmap.Biome biome;
-                    if (wayshrine.name.Contains("Frost"))
+                    var biome = Heightmap.Biome.Swamp;
+                    foreach (var entry in biomeMapping)
                     {
-                        biome = Heightmap.Biome.DeepNorth;
-                    }
-                    else if (wayshrine.name.Contains("Ashland"))
-                    {
-                        biome = Heightmap.Biome.AshLands;
-                    }
-                    else if (wayshrine.name.Contains("Plains"))
-                    {
-                        biome = Heightmap.Biome.Plains;
-                    }
-                    else if (wayshrine.name == "Wayshrine")
-                    {
-                        biome = Heightmap.Biome.BlackForest;
-                    }
-                    else if (wayshrine.name.Contains("Skull_2"))
-                    {
-                        biome = Heightmap.Biome.Mistlands;
-                    }
-                    else
-                    {
-                        biome = Heightmap.Biome.Swamp;
+                        if (wayshrine.name.Contains(entry.Key))
+                        {
+                            biome = entry.Value;
+                            break;
+                        }
                     }
 
                     Location wayshrineLocation = wayshrine.GetComponent<Location>();
@@ -127,29 +121,36 @@ namespace Wayshrine
 
                     foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
                     {
-                        if (gameObject.name == "_Locations" &&
-                            gameObject.transform.Find("Misc") is Transform locationMisc)
+                        if (gameObject.name == "_Locations" && gameObject.transform.Find("Misc") is Transform locationMisc)
                         {
+                            WayshrinePlugin.waylogger.LogDebug("Adding the shit");
                             GameObject altarCopy = Object.Instantiate(wayshrine, locationMisc, true);
                             altarCopy.name = wayshrine.name;
-                            __instance.m_locations.Add(new ZoneSystem.ZoneLocation
-                            {
-                                m_randomRotation = true,
-                                m_minAltitude = 10,
-                                m_maxAltitude = 1000,
-                                m_maxDistance = 1500,
-                                m_quantity = 5,
-                                m_biome = Heightmap.Biome.Meadows,
-                                m_prefabName = wayshrine.name,
-                                m_enable = true,
-                                m_minDistanceFromSimilar = 800,
-                                m_prioritized = true,
-                                m_forestTresholdMax = 5
-                            });
+                            __instance.m_locations.Add(CreateZoneLocation(biome, wayshrine.name));
                         }
                     }
                 }
             }
-        }*/
+
+            static ZoneSystem.ZoneLocation CreateZoneLocation(Heightmap.Biome biome, string prefabName)
+            {
+                return new ZoneSystem.ZoneLocation
+                {
+                    m_randomRotation = true,
+                    m_minAltitude = 10,
+                    m_maxAltitude = 1000,
+                    m_maxDistance = 1500,
+                    m_quantity = 5,
+                    m_biome = biome,
+                    m_prefabName = prefabName,
+                    m_enable = true,
+                    m_minDistanceFromSimilar = 1000,
+                    m_prioritized = true,
+                    m_forestTresholdMax = 5,
+                    m_forestTresholdMin = 0
+                };
+            }
+        }
+
     }
 }

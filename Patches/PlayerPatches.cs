@@ -21,6 +21,7 @@ namespace Wayshrine
         {
             public static void Postfix(Player __instance)
             {
+                //Util.RPC_GenerateWayshrines(null);
                 if (ZNet.instance.IsLocalInstance())
                 {
                     WayshrinePlugin.isAdmin = true;

@@ -16,7 +16,7 @@ public class AdminSyncing
     internal static void AdminStatusSync(ZNet __instance)
     {
         isServer = __instance.IsServer();
-        ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.ModGUID + " PMAdminStatusSync",
+        ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync",
             RPC_AdminPieceAddRemove);
 
         IEnumerator WatchAdminListChanges()
@@ -95,7 +95,7 @@ public class AdminSyncing
 
         void SendPackage(ZPackage pkg)
         {
-            string method = WayshrinePlugin.ModGUID + " PMAdminStatusSync";
+            string method = WayshrinePlugin.ModGUID + " WayAdminStatusSync";
             if (isServer)
             {
                 peer.m_rpc.Invoke(method, pkg);
@@ -123,12 +123,12 @@ public class AdminSyncing
         if (isServer)
         {
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody,
-                WayshrinePlugin.ModGUID + " PMAdminStatusSync", new ZPackage());
+                WayshrinePlugin.ModGUID + " WayAdminStatusSync", new ZPackage());
             if (ZNet.instance.m_adminList.Contains(currentPeer.m_rpc.GetSocket().GetHostName()))
             {
                 ZPackage pkg = new();
                 pkg.Write(true);
-                currentPeer.m_rpc.Invoke(WayshrinePlugin.ModGUID + " PMAdminStatusSync", pkg);
+                currentPeer.m_rpc.Invoke(WayshrinePlugin.ModGUID + " WayAdminStatusSync", pkg);
             }
         }
         else
@@ -183,7 +183,7 @@ class RegisterClientRPCPatch
     {
         if (!__instance.IsServer())
         {
-            peer.m_rpc.Register<ZPackage>(WayshrinePlugin.ModGUID + " PMAdminStatusSync",
+            peer.m_rpc.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync",
                 RPC_InitialAdminSync);
         }
         else
@@ -191,7 +191,7 @@ class RegisterClientRPCPatch
             ZPackage packge = new();
             packge.Write(__instance.m_adminList.Contains(peer.m_rpc.GetSocket().GetHostName()));
 
-            peer.m_rpc.Invoke(WayshrinePlugin.ModGUID + " PMAdminStatusSync", packge);
+            peer.m_rpc.Invoke(WayshrinePlugin.ModGUID + " WayAdminStatusSync", packge);
         }
     }
 
