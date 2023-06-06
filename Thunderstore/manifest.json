@@ -1,6 +1,6 @@
 {
   "name": "Wayshrine",
-  "version_number": "1.0.6",
+  "version_number": "1.1.0",
   "website_url": "https://discord.gg/pdHgy6Bsng",
   "description": "Call upon Heimdall to take you to other wayshrines or back to your set spawn point. The Wayshrine is surrounded by a small 'NoMonsterArea' to aid in your escape.",
   "dependencies": [
