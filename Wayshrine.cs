@@ -15,7 +15,7 @@ namespace Wayshrine
     public class WayshrinePlugin : BaseUnityPlugin
     {
         internal const string ModName = "AzuWayshrine";
-        internal const string ModVersion = "1.1.0";
+        internal const string ModVersion = "1.1.1";
         internal const string ModGUID = "Azumatt.Wayshrine";
         public static bool isAdmin = false;
         public static bool hammerAdded = false;

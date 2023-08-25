@@ -6,14 +6,6 @@ namespace Wayshrine
     [HarmonyPatch]
     public class PlayerPatches
     {
-        //private static GameObject backpack;
-        private static Inventory? _backpackInventory;
-
-        //Second Backpack container/inv
-        private static Inventory? _backpackInventory2;
-
-        private static int _bagininv;
-
         private static PieceTable? _hammer;
 
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
