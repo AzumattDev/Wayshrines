@@ -1,3 +1,5 @@
+> ### Version 1.1.2
+> - Update for Valheim 0.217.22 (Updated ServerSync)
 > ### Version 1.1.1
 > - Update for Hildir's Request (0.217.14)
 > ### Version 1.1.0
