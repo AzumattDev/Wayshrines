@@ -122,8 +122,7 @@ public class AdminSyncing
 
         if (isServer)
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody,
-                WayshrinePlugin.ModGUID + " WayAdminStatusSync", new ZPackage());
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, WayshrinePlugin.ModGUID + " WayAdminStatusSync", new ZPackage());
             if (ZNet.instance.m_adminList.Contains(currentPeer.m_rpc.GetSocket().GetHostName()))
             {
                 ZPackage pkg = new();

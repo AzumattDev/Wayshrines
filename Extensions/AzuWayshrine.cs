@@ -46,8 +46,7 @@ namespace Wayshrine
 
             if (!MinimapPatches.CheckTeleportCost())
             {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                    $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches._itemName}");
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches.ItemName}");
                 return true;
             }
 
@@ -61,26 +60,24 @@ namespace Wayshrine
                     if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                     {
                         Vector3 position = Player.m_localPlayer.transform.position;
-                        Instantiate(prefab2, position,
-                            Quaternion.identity);
+                        Instantiate(prefab2, position, Quaternion.identity);
+                        Instantiate(prefab4, position, Quaternion.identity);
 
                         // Tell it to respect the default game mixer to not blow your fucking ear drums out.
                         try
                         {
-                            prefab3.GetComponentInChildren<AudioSource>().outputAudioMixerGroup =
-                                AudioMan.instance.m_ambientMixer;
+                            prefab3.GetComponentInChildren<AudioSource>().outputAudioMixerGroup = AudioMan.instance.m_ambientMixer;
                         }
                         catch
                         {
-                            Debug.LogError(
-                                "AzuWayshrine: AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
+                            WayshrinePlugin.waylogger.LogError("AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
                         }
 
-                        Instantiate(prefab3, position,
-                            Quaternion.identity);
+                        Instantiate(prefab3, position, Quaternion.identity);
                     }
                 }
 
+                Util.RemoveItem();
                 character.Message(MessageHud.MessageType.Center, Util.GetLocalized("$activated_heimdall"));
                 Vector3 spawn = playerProfile.HaveCustomSpawnPoint()
                     ? playerProfile.GetCustomSpawnPoint()
@@ -96,8 +93,7 @@ namespace Wayshrine
             {
                 /* This code will add all the correct pins to the map for each different type of shrine. */
                 WayshrineCustomBehaviour wayshrine = kv.Value.Prefab.GetComponent<WayshrineCustomBehaviour>();
-                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType,
-                    Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
+                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType, Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
             }
 
             return false;
@@ -151,7 +147,7 @@ namespace Wayshrine
             }
 
             /* It appears Util.sendWayshrines(0) is needed here, otherwise the map pins disappear from the map after a distant teleport */
-            Util.SendWayshrines(0);
+            Util.SendWayshrines(ZRoutedRpc.Everybody);
         }
 
         public struct WayshrineInfo

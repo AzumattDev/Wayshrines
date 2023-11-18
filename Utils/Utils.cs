@@ -23,7 +23,7 @@ namespace Wayshrine
 
             SendWayshrines(target, wayshrineZDOs);
         }
-        
+
         public static void GetAllZDOsWithPrefab(string prefab, List<ZDO> zdos)
         {
             int stableHashCode = prefab.GetStableHashCode();
@@ -91,6 +91,13 @@ namespace Wayshrine
 
             WayshrineCustomBehaviour.pins.Clear();
             SendWayshrines(0);
+        }
+
+        public static void RemoveItem()
+        {
+            if (!WayshrinePlugin.ShouldCost.Value) return;
+            Player.m_localPlayer.GetInventory().RemoveItem(MinimapPatches.ItemSharedName, WayshrinePlugin.ChargeItemAmount.Value);
+            Player.m_localPlayer.ShowRemovedMessage(MinimapPatches.itemData, WayshrinePlugin.ChargeItemAmount.Value);
         }
     }
 }

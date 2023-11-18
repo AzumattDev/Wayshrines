@@ -9,13 +9,16 @@ namespace Wayshrine
     public static class MinimapPatches
     {
         public static bool IsHeimdallMode;
-        internal static string? _itemName;
+        internal static string? ItemName;
+        internal static string? ItemSharedName;
+        internal static ItemDrop.ItemData? itemData;
 
         private static void LeaveHeimdallMode()
         {
             IsHeimdallMode = false;
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) Minimap.instance.RemovePin(pinData);
             WayshrineCustomBehaviour.pins.Clear();
+            //Minimap.instance.SetMapMode(Minimap.MapMode.Small);
         }
 
         private static async void DoBiFrostStuff()
@@ -31,23 +34,20 @@ namespace Wayshrine
 
             if (!CheckTeleportCost())
             {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                    $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {_itemName}");
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {ItemName}");
                 return;
             }
 
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = true;
 
             Minimap minimap = Minimap.instance;
-            Minimap.PinData closestPin = minimap.GetClosestPin(minimap.ScreenToWorldPoint(Input.mousePosition),
-                minimap.m_removeRadius * (minimap.m_largeZoom * 2f));
+            Minimap.PinData closestPin = minimap.GetClosestPin(minimap.ScreenToWorldPoint(Input.mousePosition), minimap.m_removeRadius * (minimap.m_largeZoom * 2f));
 
             WayshrinePlugin.waylogger.LogDebug("Closest Pin grabbed " + closestPin.m_name);
 
             foreach (Minimap.PinData pinData in WayshrineCustomBehaviour.pins) pinData.m_save = false;
-
-            if (closestPin == null || !WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos,
-                    out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
+            if(closestPin == null) return;
+            if (!WayshrineCustomBehaviour.Wayshrines.TryGetValue(closestPin.m_pos, out WayshrineCustomBehaviour.WayshrineInfo wayshrine)) return;
 
             Vector3 position = closestPin.m_pos;
             Quaternion rotation = wayshrine.Rotation;
@@ -55,7 +55,7 @@ namespace Wayshrine
             Minimap.instance.SetMapMode(Minimap.MapMode.Small);
             LeaveHeimdallMode();
             await Task.Delay(TimeSpan.FromSeconds(2));
-            Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Heimdall opens the Bifrost: Teleporting");
+            MessageHud.instance.ShowBiomeFoundMsg("Heimdall opens the Bifrost: Teleporting", true);
             await Task.Delay(TimeSpan.FromSeconds(2));
             GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
             GameObject prefab3 = ZNetScene.instance.GetPrefab("vfx_bifrost");
@@ -75,8 +75,7 @@ namespace Wayshrine
                     }
                     catch
                     {
-                        Debug.LogError(
-                            "AzuWayshrine: AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
+                        WayshrinePlugin.waylogger.LogError("AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
                     }
 
                     GameObject? effect = Object.Instantiate(prefab3, position1,
@@ -90,7 +89,7 @@ namespace Wayshrine
             Player p = Player.m_localPlayer;
 
             WayshrinePlugin.waylogger.LogDebug("Calling BiFrost on: " + p.GetPlayerName());
-
+            Util.RemoveItem();
             Player.m_localPlayer.TeleportTo(new Vector3(pos.x + 1.5f, pos.y, pos.z + 1.5f), rotation, true);
             p.m_lastGroundTouch = 0f;
         }
@@ -98,22 +97,12 @@ namespace Wayshrine
         internal static bool CheckTeleportCost()
         {
             if (!WayshrinePlugin.ShouldCost.Value) return true;
-            ItemDrop? item = ZNetScene.instance.GetPrefab(WayshrinePlugin.ChargeItem.Value)
-                .GetComponent<ItemDrop>();
+            ItemDrop? item = ZNetScene.instance.GetPrefab(WayshrinePlugin.ChargeItem.Value).GetComponent<ItemDrop>();
             if (!item) return false;
-            _itemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
-            if (Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >=
-                WayshrinePlugin.ChargeItemAmount.Value)
-            {
-                Player.m_localPlayer.GetInventory().RemoveItem(item.m_itemData.m_shared.m_name,
-                    WayshrinePlugin.ChargeItemAmount.Value);
-                Player.m_localPlayer.ShowRemovedMessage(item.m_itemData,
-                    WayshrinePlugin.ChargeItemAmount.Value);
-                return true;
-            }
-
-            return false;
-
+            ItemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
+            ItemSharedName = item.m_itemData.m_shared.m_name;
+            itemData = item.m_itemData;
+            return Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >= WayshrinePlugin.ChargeItemAmount.Value;
         }
 
         [HarmonyPatch(typeof(Minimap), nameof(Minimap.SetMapMode))]

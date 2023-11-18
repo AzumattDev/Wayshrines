@@ -11,8 +11,7 @@ namespace Wayshrine
     public static class Assets
     {
         private static int
-            MinimapPinId =
-                180; //start at 180 just in case other mods or the devs want to add more pins. Hopefully dodges a conflict
+            MinimapPinId = 180; //start at 180 just in case other mods or the devs want to add more pins. Hopefully dodges a conflict
 
         public static GameObject wayshrine = null!;
         private static GameObject wayshrine_ash = null!;
@@ -27,8 +26,7 @@ namespace Wayshrine
         private static AssetBundle GetAssetBundleFromResources(string filename)
         {
             Assembly execAssembly = Assembly.GetExecutingAssembly();
-            string resourceName = execAssembly.GetManifestResourceNames()
-                .Single(str => str.EndsWith(filename));
+            string resourceName = execAssembly.GetManifestResourceNames().Single(str => str.EndsWith(filename));
 
             using Stream? stream = execAssembly.GetManifestResourceStream(resourceName);
             return AssetBundle.LoadFromStream(stream);
@@ -36,7 +34,7 @@ namespace Wayshrine
 
         private static void InitAssets(GameObject wayshrineGO)
         {
-            MaterialReplacer.RegisterGameObjectForShaderSwap(wayshrineGO, MaterialReplacer.ShaderType.PieceShader);
+            MaterialReplacer.RegisterGameObjectForShaderSwap(Utils.FindChild(wayshrineGO.transform, "model").gameObject, MaterialReplacer.ShaderType.PieceShader);
             WayshrineCustomBehaviour wayshrineComponent = wayshrineGO.AddComponent<WayshrineCustomBehaviour>();
             var location = wayshrineGO.AddComponent<Location>();
 
@@ -99,7 +97,7 @@ namespace Wayshrine
                 { "Wayshrine", Heightmap.Biome.BlackForest },
                 { "Skull_2", Heightmap.Biome.Mistlands },
             };
-    
+
             static void Prefix(ZoneSystem __instance)
             {
                 foreach (GameObject wayshrine in wayshrinesList)
@@ -151,6 +149,5 @@ namespace Wayshrine
                 };
             }
         }
-
     }
 }

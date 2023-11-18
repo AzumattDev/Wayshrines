@@ -27,8 +27,7 @@ public class WayEntryDetector : MonoBehaviour
 
         if (!MinimapPatches.CheckTeleportCost())
         {
-            Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches._itemName}");
+            Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches.ItemName}");
             return;
         }
 
@@ -42,23 +41,19 @@ public class WayEntryDetector : MonoBehaviour
                 if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
                 {
                     Vector3 position = Player.m_localPlayer.transform.position;
-                    Instantiate(prefab2, position,
-                        Quaternion.identity);
+                    Instantiate(prefab2, position, Quaternion.identity);
 
                     // Tell it to respect the default game mixer to not blow your fucking ear drums out.
                     try
                     {
-                        prefab3.GetComponentInChildren<AudioSource>().outputAudioMixerGroup =
-                            AudioMan.instance.m_ambientMixer;
+                        prefab3.GetComponentInChildren<AudioSource>().outputAudioMixerGroup = AudioMan.instance.m_ambientMixer;
                     }
                     catch
                     {
-                        Debug.LogError(
-                            "AzuWayshrine: AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
+                        WayshrinePlugin.waylogger.LogDebug("AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
                     }
 
-                    Instantiate(prefab3, position,
-                        Quaternion.identity);
+                    Instantiate(prefab3, position, Quaternion.identity);
                 }
             }
 
@@ -66,6 +61,7 @@ public class WayEntryDetector : MonoBehaviour
             Vector3 spawn = playerProfile.HaveCustomSpawnPoint()
                 ? playerProfile.GetCustomSpawnPoint()
                 : playerProfile.GetHomePoint();
+            Util.RemoveItem();
             p.TeleportTo(spawn, Quaternion.identity, false);
             p.m_lastGroundTouch = 0f;
         }
@@ -85,5 +81,6 @@ public class WayEntryDetector : MonoBehaviour
 
     private void OnTriggerExit(Collider collider)
     {
+        Minimap.instance.SetMapMode(Minimap.MapMode.Small);
     }
 }
