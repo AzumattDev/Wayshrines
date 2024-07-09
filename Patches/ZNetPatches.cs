@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using JetBrains.Annotations;
+using Wayshrine.Utils;
 
 namespace Wayshrine.Patches
 {
@@ -21,9 +22,9 @@ namespace Wayshrine.Patches
     {
         private static void Postfix()
         {
-            ZRoutedRpc.instance.Register<ZPackage>("RequestWayZDOs", Util.ReadWayshrines);
+            ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.RPC_RequestWayshrines, Util.ReadWayshrines);
 
-            ZRoutedRpc.instance.Register<ZPackage>("DeleteWayZDOs", Util.DeleteWayZDOs);
+            ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.RPC_DeleteWayshrines, Util.DeleteWayZDOs);
         }
     }
 }

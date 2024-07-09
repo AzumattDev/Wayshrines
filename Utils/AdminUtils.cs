@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using HarmonyLib;
 using UnityEngine;
+using Wayshrine.Utils;
 
 namespace Wayshrine;
 
@@ -16,8 +17,7 @@ public class AdminSyncing
     internal static void AdminStatusSync(ZNet __instance)
     {
         isServer = __instance.IsServer();
-        ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync",
-            RPC_AdminPieceAddRemove);
+        ZRoutedRpc.instance.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync", RPC_AdminPieceAddRemove);
 
         IEnumerator WatchAdminListChanges()
         {
@@ -29,7 +29,7 @@ public class AdminSyncing
                 {
                     CurrentList = new List<string>(ZNet.instance.m_adminList.GetList());
                     List<ZNetPeer> adminPeer = ZNet.instance.GetPeers().Where(p =>
-                        ZNet.instance.ListContainsId(ZNet.instance.m_adminList,p.m_rpc.GetSocket().GetHostName())).ToList();
+                        ZNet.instance.ListContainsId(ZNet.instance.m_adminList, p.m_rpc.GetSocket().GetHostName())).ToList();
                     List<ZNetPeer> nonAdminPeer = ZNet.instance.GetPeers().Except(adminPeer).ToList();
                     SendAdmin(nonAdminPeer, false);
                     SendAdmin(adminPeer, true);
@@ -74,8 +74,7 @@ public class AdminSyncing
             package = compressedPackage;
         }
 
-        List<IEnumerator<bool>> writers =
-            peers.Where(peer => peer.IsReady()).Select(p => TellPeerAdminStatus(p, package)).ToList();
+        List<IEnumerator<bool>> writers = peers.Where(peer => peer.IsReady()).Select(p => TellPeerAdminStatus(p, package)).ToList();
         writers.RemoveAll(writer => !writer.MoveNext());
         while (writers.Count > 0)
         {
@@ -138,7 +137,7 @@ public class AdminSyncing
                 Piece piecePrefab = piece.GetComponent<Piece>();
                 string pieceName = piecePrefab.m_name;
                 string localizedName = Localization.instance.Localize(pieceName).Trim();
-                if (!ObjectDB.instance || ObjectDB.instance.GetItemPrefab("Wood") == null) continue;
+                if (!ObjectDB.instance || ObjectDB.instance.GetItemPrefab("YagluthDrop") == null) continue;
                 foreach (Piece instantiatedPiece in UnityEngine.Object.FindObjectsOfType<Piece>())
                 {
                     if (admin)
@@ -157,18 +156,18 @@ public class AdminSyncing
                     }
                 }
 
-                List<GameObject>? hammerPieces = ObjectDB.instance.GetItemPrefab("Hammer").GetComponent<ItemDrop>()
-                    .m_itemData.m_shared.m_buildPieces
-                    .m_pieces;
+                List<GameObject>? hammerPieces = ObjectDB.instance.GetItemPrefab("Hammer").GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces.m_pieces;
+                var prefab = ZNetScene.instance.GetPrefab(piecePrefab.name);
+                if (prefab is null) continue;
                 if (admin)
                 {
-                    if (!hammerPieces.Contains(ZNetScene.instance.GetPrefab(piecePrefab.name)))
-                        hammerPieces.Add(ZNetScene.instance.GetPrefab(piecePrefab.name));
+                    if (hammerPieces.Contains(prefab)) continue;
+                    hammerPieces.Add(prefab);
                 }
                 else
                 {
-                    if (hammerPieces.Contains(ZNetScene.instance.GetPrefab(piecePrefab.name)))
-                        hammerPieces.Remove(ZNetScene.instance.GetPrefab(piecePrefab.name));
+                    if (!hammerPieces.Contains(prefab)) continue;
+                    hammerPieces.Remove(prefab);
                 }
             }
         }
@@ -182,8 +181,7 @@ class RegisterClientRPCPatch
     {
         if (!__instance.IsServer())
         {
-            peer.m_rpc.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync",
-                RPC_InitialAdminSync);
+            peer.m_rpc.Register<ZPackage>(WayshrinePlugin.ModGUID + " WayAdminStatusSync", RPC_InitialAdminSync);
         }
         else
         {
@@ -194,11 +192,10 @@ class RegisterClientRPCPatch
         }
     }
 
-    private static void RPC_InitialAdminSync(ZRpc rpc, ZPackage package) =>
-        AdminSyncing.RPC_AdminPieceAddRemove(0, package);
+    private static void RPC_InitialAdminSync(ZRpc rpc, ZPackage package) => AdminSyncing.RPC_AdminPieceAddRemove(0, package);
 }
 
-[HarmonyPatch(typeof(ZNet),nameof(ZNet.Awake))]
+[HarmonyPatch(typeof(ZNet), nameof(ZNet.Awake))]
 static class ZNetAwakePatch
 {
     static void Postfix(ZNet __instance)

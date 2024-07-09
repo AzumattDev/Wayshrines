@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using JetBrains.Annotations;
+using LocalizationManager;
 using ServerSync;
 using UnityEngine;
+using Wayshrine.Utils;
 
 namespace Wayshrine
 {
@@ -28,110 +32,47 @@ namespace Wayshrine
 
         private static string ConfigFileName = ModGUID + ".cfg";
         private static string ConfigFileFullPath = Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
-
-        private static string LangFileFullPath =
-            Paths.ConfigPath + Path.DirectorySeparatorChar + ModGUID + ".Localization.cfg";
-
         public static readonly ManualLogSource waylogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
-
-        private static readonly ConfigSync configSync = new(ModGUID)
-            { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
-
-        private static ConfigFile _localizationFile = null!;
+        private static readonly ConfigSync configSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
         private static readonly Dictionary<string, ConfigEntry<string>> MLocalizedStrings = new();
 
-        private static ConfigEntry<bool> _serverConfigLocked = null!;
-        public static ConfigEntry<bool> OriginalFunc = null!;
-        public static ConfigEntry<bool> DisableBifrostEffect = null!;
-        public static ConfigEntry<bool> Teleportable = null!;
-        public static ConfigEntry<bool> ShouldCost = null!;
-        public static ConfigEntry<string> ChargeItem = null!;
-        public static ConfigEntry<int> ChargeItemAmount = null!;
+        // RPC Method Constants
+        public const string RPC_RequestWayshrines = "RequestWayZDOs";
+        public const string RPC_DeleteWayshrines = "DeleteWayZDOs";
 
-        private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
-            bool synchronizedSetting = true)
+        public enum Toggle
         {
-            ConfigEntry<T> configEntry = Config.Bind(group, name, value, description);
-
-            SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
-            syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
-
-            return configEntry;
-        }
-
-        private ConfigEntry<T> config<T>(string group, string name, T value, string description,
-            bool synchronizedSetting = true)
-        {
-            return config(group, name, value, new ConfigDescription(description), synchronizedSetting);
+            On = 1,
+            Off = 0
         }
 
         public void Awake()
         {
+            Localizer.Load();
             Assembly assembly = Assembly.GetExecutingAssembly();
             Harmony harmony = new(ModGUID);
-            _localizationFile =
-                new ConfigFile(
-                    Path.Combine(Path.GetDirectoryName(Config.ConfigFilePath)!, ModGUID + ".Localization.cfg"), false);
             Assets.LoadAssets();
 
-            _serverConfigLocked = config("General", "Force Server Config", true, "Force Server Config");
+            _serverConfigLocked = config("General", "Force Server Config", Toggle.On, "Force the server configuration. If on, the configuration is locked and can be changed by server admins only.");
             configSync.AddLockingConfigEntry(_serverConfigLocked);
-            OriginalFunc = config("General", "Original Function", false,
-                "Use the original functionality of the Wayshrines, unlink them and only take you to spawn or home");
-            DisableBifrostEffect = config("General", "Disable Bifrost Effect", false,
-                "Disable the bifrost effect on teleport");
-            Teleportable = config("General", "AllowTeleport", false, "Enable teleport with restricted items");
+            OriginalFunc = config("General", "Original Function", Toggle.Off, "Use the original functionality of the Wayshrines, unlink them and only take you to spawn or home");
+            DisableBifrostEffect = config("General", "Disable Bifrost Effect", Toggle.Off, "Disable the bifrost effect on teleport", false);
+            Teleportable = config("General", "AllowTeleport", Toggle.Off, "Enable teleport with restricted items");
+
+            ModifierKey = config("Hotkeys", "Interaction Modifier Key", new KeyboardShortcut(KeyCode.LeftAlt), new ConfigDescription("Personal hotkey to toggle a ward on which you're permitted on/off", new AcceptableShortcuts()), false);
 
             /* Charge */
-            ShouldCost = config("Wayshrine Cost", "Should Cost?", false,
-                "Should using the wayshrines cost the player something from their inventory?");
-            ChargeItem = config("Wayshrine Cost", "Cost Item", "Coins",
-                "Item needed to use the wayshrine. Limit is 1 item: Goes by prefab name. List of vanilla items here: https://github.com/Valheim-Modding/Wiki/wiki/ObjectDB-Table");
-            ChargeItemAmount = config("Wayshrine Cost", "Cost Item Amount", 5,
-                "Amount of the Item needed to teleport using a wayshrine.");
+            ShouldCost = config("Wayshrine Cost", "Should Cost?", Toggle.Off, new ConfigDescription("Should using the wayshrines cost the player something from their inventory?", null, new ConfigurationManagerAttributes() { Order = 2 }));
+            ChargeItem = config("Wayshrine Cost", "Cost Item", "WayshrineToken", new ConfigDescription("Item needed to use the wayshrine. Limit is 1 item: Goes by prefab name. List of vanilla items here: https://github.com/Valheim-Modding/Wiki/wiki/ObjectDB-Table", null, new ConfigurationManagerAttributes() { Order = 1 }));
+            ChargeItemAmount = config("Wayshrine Cost", "Cost Item Amount", 5, new ConfigDescription("Amount of the Item needed to teleport using a wayshrine.", null, new ConfigurationManagerAttributes() { Order = 0 }));
 
             SetupWatcher();
             harmony.PatchAll(assembly);
-            Localize();
         }
 
         public void OnDestroy()
         {
-            _localizationFile.Save();
             Config.Save();
-        }
-
-        private static void Localize()
-        {
-            try
-            {
-                LocalizeWord("piece_azuwayshrine", "Wayshrine");
-                LocalizeWord("piece_azuwayshrine_ashlands", "Ashlands Wayshrine");
-                LocalizeWord("piece_azuwayshrine_frost", "Frost Wayshrine");
-                LocalizeWord("piece_azuwayshrine_plains", "Plains Wayshrine");
-                LocalizeWord("piece_azuwayshrine_skull", "Skull Wayshrine");
-                LocalizeWord("piece_azuwayshrine_skull_2", "Skull Wayshrine");
-                LocalizeWord("wayshrine_activate", "Activate");
-                LocalizeWord("activated_heimdall", "Heimdall opens the Bifrost!");
-                LocalizeWord("wayshrine_description", "Call to Heimdall, for he shall take you home");
-                LocalizeWord("wayshrine_cost_error", "Required Items needed");
-            }
-            catch (Exception ex)
-            {
-                waylogger.LogError($"Localizing your values failed! {ex}");
-            }
-        }
-
-        private static void LocalizeWord(string key, string val)
-        {
-            if (!MLocalizedStrings.ContainsKey(key))
-            {
-                Localization? loc = Localization.instance;
-                string? langSection = loc.GetSelectedLanguage();
-                ConfigEntry<string>? configEntry = _localizationFile.Bind(langSection, key, val);
-                Localization.instance.AddWord(key, configEntry.Value);
-                MLocalizedStrings.Add(key, configEntry);
-            }
         }
 
         private void SetupWatcher()
@@ -143,15 +84,6 @@ namespace Wayshrine
             watcher.IncludeSubdirectories = true;
             watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
             watcher.EnableRaisingEvents = true;
-
-
-            FileSystemWatcher langwatcher = new(Paths.ConfigPath, ModGUID + ".Localization.cfg");
-            //langwatcher.Changed += ReadLangValues;
-            langwatcher.Created += ReadLangValues;
-            langwatcher.Renamed += ReadLangValues;
-            langwatcher.IncludeSubdirectories = true;
-            langwatcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-            langwatcher.EnableRaisingEvents = true;
         }
 
         private void ReadConfigValues(object sender, FileSystemEventArgs e)
@@ -169,42 +101,65 @@ namespace Wayshrine
             }
         }
 
-        private void ReadLangValues(object sender, FileSystemEventArgs e)
+        # region Config Options
+
+        private static ConfigEntry<Toggle> _serverConfigLocked = null!;
+        public static ConfigEntry<Toggle> OriginalFunc = null!;
+        public static ConfigEntry<Toggle> DisableBifrostEffect = null!;
+        public static ConfigEntry<Toggle> Teleportable = null!;
+        public static ConfigEntry<Toggle> ShouldCost = null!;
+        public static ConfigEntry<string> ChargeItem = null!;
+        public static ConfigEntry<int> ChargeItemAmount = null!;
+        public static ConfigEntry<KeyboardShortcut> ModifierKey = null!;
+
+        private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {
-            if (!File.Exists(LangFileFullPath)) return;
-            try
-            {
-                //waylogger.LogDebug("ReadLangValues called");
-                _localizationFile.Reload();
+            ConfigEntry<T> configEntry = Config.Bind(group, name, value, description);
 
-                foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in _localizationFile)
-                {
-                    ConfigEntryBase configEntryBase = keyValuePair.Value;
-                    if (configEntryBase.SettingType != typeof(string)) continue;
-                    ConfigEntry<string> configEntry = (ConfigEntry<string>)configEntryBase;
-                    if (!MLocalizedStrings.ContainsKey(configEntry.Definition.Key))
-                    {
-                        Localization? loc = Localization.instance;
-                        string? langSection = loc.GetSelectedLanguage();
-                        ConfigEntry<string>? configEntryBind = _localizationFile.Bind(langSection,
-                            configEntry.Definition.Key, configEntry.Value);
-                        Localization.instance.AddWord(configEntry.Definition.Key, configEntryBind.Value);
-                        MLocalizedStrings.Add(configEntry.Definition.Key, configEntryBind);
-                    }
-                    else if (MLocalizedStrings.ContainsKey(configEntry.Definition.Key))
-                    {
-                        Localization.instance.AddWord(configEntry.Definition.Key,
-                            configEntry.Value); // Note, this removes the key first, then adds it again.
-                    }
-                }
+            SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
+            syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
 
-                _localizationFile.Save();
-            }
-            catch
+            return configEntry;
+        }
+
+        private ConfigEntry<T> config<T>(string group, string name, T value, string description, bool synchronizedSetting = true)
+        {
+            return config(group, name, value, new ConfigDescription(description), synchronizedSetting);
+        }
+
+        private class ConfigurationManagerAttributes
+        {
+            [UsedImplicitly] public int? Order;
+            [UsedImplicitly] public bool? Browsable;
+            [UsedImplicitly] public string? Category;
+            [UsedImplicitly] public Action<ConfigEntryBase>? CustomDrawer;
+        }
+
+        class AcceptableShortcuts : AcceptableValueBase
+        {
+            public AcceptableShortcuts() : base(typeof(KeyboardShortcut))
             {
-                waylogger.LogError($"There was an issue loading your {ModGUID}.Localization.cfg");
-                waylogger.LogError("Please check your config entries for spelling and format!");
             }
+
+            public override object Clamp(object value) => value;
+            public override bool IsValid(object value) => true;
+
+            public override string ToDescriptionString() => "# Acceptable values: " + string.Join(", ", UnityInput.Current.SupportedKeyCodes);
+        }
+
+        #endregion
+    }
+
+    public static class KeyboardExtensions
+    {
+        public static bool IsKeyDown(this KeyboardShortcut shortcut)
+        {
+            return shortcut.MainKey != KeyCode.None && Input.GetKeyDown(shortcut.MainKey) && shortcut.Modifiers.All(Input.GetKey);
+        }
+
+        public static bool IsKeyHeld(this KeyboardShortcut shortcut)
+        {
+            return shortcut.MainKey != KeyCode.None && Input.GetKey(shortcut.MainKey) && shortcut.Modifiers.All(Input.GetKey);
         }
     }
 }

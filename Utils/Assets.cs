@@ -5,13 +5,13 @@ using System.Reflection;
 using HarmonyLib;
 using PieceManager;
 using UnityEngine;
+using Wayshrine.Extensions;
 
-namespace Wayshrine
+namespace Wayshrine.Utils
 {
     public static class Assets
     {
-        private static int
-            MinimapPinId = 180; //start at 180 just in case other mods or the devs want to add more pins. Hopefully dodges a conflict
+        private static int MinimapPinId = 180; //start at 180 just in case other mods or the devs want to add more pins. Hopefully dodges a conflict
 
         public static GameObject wayshrine = null!;
         private static GameObject wayshrine_ash = null!;
@@ -20,6 +20,7 @@ namespace Wayshrine
         private static GameObject wayshrine_skull = null!;
         private static GameObject wayshrine_skull_2 = null!;
         private static GameObject vfx_bifrost = null!;
+        private static GameObject wayshrine_token = null!;
         public static readonly List<GameObject> wayshrinesList = new();
         private static bool AssetsLoaded;
 
@@ -34,13 +35,13 @@ namespace Wayshrine
 
         private static void InitAssets(GameObject wayshrineGO)
         {
-            MaterialReplacer.RegisterGameObjectForShaderSwap(Utils.FindChild(wayshrineGO.transform, "model").gameObject, MaterialReplacer.ShaderType.PieceShader);
+            MaterialReplacer.RegisterGameObjectForShaderSwap(global::Utils.FindChild(wayshrineGO.transform, "model").gameObject, MaterialReplacer.ShaderType.PieceShader);
             WayshrineCustomBehaviour wayshrineComponent = wayshrineGO.AddComponent<WayshrineCustomBehaviour>();
             var location = wayshrineGO.AddComponent<Location>();
 
             Piece? piece = wayshrineGO.GetComponent<Piece>();
             //piece.m_name = name;
-            piece.m_description = "Call to Heimdall, for he shall take you home";
+            piece.m_description = Util.GetLocalized("$wayshrine_description");
             piece.m_canBeRemoved = false;
             piece.m_primaryTarget = false;
             piece.m_randomTarget = true;
@@ -60,6 +61,7 @@ namespace Wayshrine
             wayshrine_skull = assetBundle.LoadAsset<GameObject>("Wayshrine_Skull");
             wayshrine_skull_2 = assetBundle.LoadAsset<GameObject>("Wayshrine_Skull_2");
             vfx_bifrost = assetBundle.LoadAsset<GameObject>("vfx_bifrost");
+            wayshrine_token = assetBundle.LoadAsset<GameObject>("WayshrineToken");
 
             InitAssets(wayshrine);
             InitAssets(wayshrine_ash);
@@ -80,9 +82,43 @@ namespace Wayshrine
                 if (!AssetsLoaded) LoadAssets();
                 foreach (GameObject wayshrine in wayshrinesList) __instance.m_prefabs.Add(wayshrine);
                 __instance.m_prefabs.Add(vfx_bifrost);
+                __instance.m_prefabs.Add(wayshrine_token);
 
                 WayshrinePlugin.waylogger.LogDebug("Loading the prefabs");
                 return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+        static class ObjectDBAwakePatch
+        {
+            static void Prefix(ObjectDB __instance)
+            {
+                LoadToken(__instance);
+            }
+
+            internal static void LoadToken(ObjectDB odbInstance)
+            {
+                if (odbInstance.GetItemPrefab("YagluthDrop") == null)
+                {
+                    return;
+                }
+
+                if (!odbInstance.m_items.Contains(wayshrine_token))
+                {
+                    odbInstance.m_items.Add(wayshrine_token);
+                }
+
+                odbInstance.UpdateItemHashes();
+            }
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.CopyOtherDB))]
+        static class ObjectDBCopyOtherDBPatch
+        {
+            static void Postfix(ObjectDB __instance)
+            {
+                ObjectDBAwakePatch.LoadToken(__instance);
             }
         }
 

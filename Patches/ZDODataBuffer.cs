@@ -3,6 +3,8 @@ using HarmonyLib;
 
 namespace Wayshrine.Patches;
 
+/* Pretty much all of this code is to help offset issues with BetterNetworking */
+
 public static class WayshrineZdoDataBuffer
 {
     private static readonly List<ZPackage> PackageBuffer = new();

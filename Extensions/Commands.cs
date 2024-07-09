@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Wayshrine.Utils;
 
 namespace Wayshrine
 {
@@ -19,9 +20,8 @@ namespace Wayshrine
             Terminal.ConsoleCommand deleteWayshrinesCommand = new("delway", "Delete Wayshrines and Wayshrine Pins",
                 args =>
                 {
-                    ZRoutedRpc.instance.InvokeRoutedRPC("DeleteWayZDOs", new ZPackage());
-                    args.Context?.AddString(
-                            "<color=yellow>Delete Wayshrines called. Trying to delete all ZDOs</color>");
+                    ZRoutedRpc.instance.InvokeRoutedRPC(WayshrinePlugin.RPC_DeleteWayshrines, new ZPackage());
+                    args.Context?.AddString("<color=yellow>Delete Wayshrines called. Trying to delete all ZDOs</color>");
                     ZDOMan.instance.SendDestroyed();
                     Util.SendWayshrines(0);
                 }, true, isNetwork: true, onlyServer: true);

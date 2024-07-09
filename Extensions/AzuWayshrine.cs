@@ -1,159 +1,122 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
+using Wayshrine.Patches;
+using Wayshrine.Utils;
 
-namespace Wayshrine
+namespace Wayshrine.Extensions;
+
+public class WayshrineCustomBehaviour : MonoBehaviour, Hoverable, Interactable
 {
-    [HarmonyPatch]
-    public class WayshrineCustomBehaviour : MonoBehaviour, Hoverable, Interactable
+    public static readonly Dictionary<Vector3, WayshrineInfo> Wayshrines = new();
+    public static readonly List<Minimap.PinData> pins = new();
+
+    internal ZNetView _zNetView = null!;
+    internal ZDOID _zdoId = ZDOID.None;
+
+    private Piece piece = null!;
+    public Minimap.PinType pinType;
+    private Piece wayshrinePiece = null!;
+
+    public string GetHoverText()
     {
-        public static readonly Dictionary<Vector3, WayshrineInfo> Wayshrines = new();
-        public static readonly List<Minimap.PinData> pins = new();
+        return WayshrinePlugin.OriginalFunc.Value == WayshrinePlugin.Toggle.On ? Util.GetLocalized(piece.m_name + $"\n[<color=yellow><b>$KEY_Use</b></color>] $wayshrine_activate\n[<color=yellow><b>{WayshrinePlugin.ModifierKey.Value} + $KEY_Use</b></color>] $wayshrine_teleportHome") : Util.GetLocalized(piece.m_name + $"\n[<color=yellow><b>$KEY_Use</b></color>] $wayshrine_activate");
+    }
 
-        [TextArea] private ZNetView _zNetView = null!;
+    public string GetHoverName()
+    {
+        return Util.GetLocalized(piece.m_name);
+    }
 
-        private Piece piece = null!;
-        public Minimap.PinType pinType;
-        private Piece wayshrinePiece = null!;
+    public bool Interact(Humanoid character, bool hold, bool alt)
+    {
+        if (hold || Player.m_localPlayer == null || Player.m_localPlayer != (Player)character)
+            return true;
 
-        public string GetHoverText()
+        Player? p = character as Player;
+        PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
+        if (!character.IsTeleportable())
         {
-            return Util.GetLocalized(piece.m_name + "\n[<color=yellow><b>$KEY_Use</b></color>] $wayshrine_activate");
-        }
-
-        public string GetHoverName()
-        {
-            return Util.GetLocalized(piece.m_name);
-        }
-
-        public bool Interact(Humanoid character, bool hold, bool alt)
-        {
-            if (hold)
+            if (WayshrinePlugin.Teleportable.Value == WayshrinePlugin.Toggle.Off)
             {
+                character.Message(MessageHud.MessageType.Center, "$msg_noteleport");
                 return true;
             }
-
-            Player p = Player.m_localPlayer;
-            PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
-            if (!Player.m_localPlayer.IsTeleportable())
-            {
-                if (!WayshrinePlugin.Teleportable.Value)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_noteleport");
-                    return true;
-                }
-            }
-
-            if (!MinimapPatches.CheckTeleportCost())
-            {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches.ItemName}");
-                return true;
-            }
-
-            if (WayshrinePlugin.OriginalFunc is { Value: true })
-            {
-                GameObject prefab2 = ZNetScene.instance.GetPrefab("fx_dragon_land");
-                GameObject prefab3 = ZNetScene.instance.GetPrefab("vfx_bifrost");
-                GameObject prefab4 = ZNetScene.instance.GetPrefab("sfx_thunder");
-                if (!Equals(prefab2, null) && !Equals(prefab3, null))
-                {
-                    if (WayshrinePlugin.DisableBifrostEffect is { Value: false })
-                    {
-                        Vector3 position = Player.m_localPlayer.transform.position;
-                        Instantiate(prefab2, position, Quaternion.identity);
-                        Instantiate(prefab4, position, Quaternion.identity);
-
-                        // Tell it to respect the default game mixer to not blow your fucking ear drums out.
-                        try
-                        {
-                            prefab3.GetComponentInChildren<AudioSource>().outputAudioMixerGroup = AudioMan.instance.m_ambientMixer;
-                        }
-                        catch
-                        {
-                            WayshrinePlugin.waylogger.LogError("AudioMan.instance.m_ambientMixer could not be assigned on outputAudioMixerGroup of vfx_bifrost");
-                        }
-
-                        Instantiate(prefab3, position, Quaternion.identity);
-                    }
-                }
-
-                Util.RemoveItem();
-                character.Message(MessageHud.MessageType.Center, Util.GetLocalized("$activated_heimdall"));
-                Vector3 spawn = playerProfile.HaveCustomSpawnPoint()
-                    ? playerProfile.GetCustomSpawnPoint()
-                    : playerProfile.GetHomePoint();
-                p.TeleportTo(spawn, Quaternion.identity, false);
-                p.m_lastGroundTouch = 0f;
-                return true;
-            }
-
-            MinimapPatches.IsHeimdallMode = true;
-            Minimap.instance.ShowPointOnMap(transform.position);
-            foreach (KeyValuePair<Vector3, WayshrineInfo> kv in Wayshrines)
-            {
-                /* This code will add all the correct pins to the map for each different type of shrine. */
-                WayshrineCustomBehaviour wayshrine = kv.Value.Prefab.GetComponent<WayshrineCustomBehaviour>();
-                pins.Add(Minimap.instance.AddPin(kv.Key, wayshrine.pinType, Util.GetLocalized(kv.Value.Prefab.GetComponent<Piece>().m_name), false, false));
-            }
-
-            return false;
         }
 
-        public bool UseItem(Humanoid user, ItemDrop.ItemData item)
+        if (!Util.CheckTeleportCost())
         {
-            return false;
+            Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"$wayshrine_cost_error : {WayshrinePlugin.ChargeItemAmount.Value} {MinimapPatches.ItemName}");
+            return true;
         }
 
-        private void Awake()
+        Util.AddToPlayerIfNotExists(_zNetView, p);
+        if (Util.UseOriginalFunc(p, playerProfile, character, _zNetView))
+            return true;
+
+        Util.ShowPointAddPins(transform, p);
+
+        return false;
+    }
+
+    public bool UseItem(Humanoid user, ItemDrop.ItemData item)
+    {
+        return false;
+    }
+
+    private void Awake()
+    {
+        /* in the awake method of our component, we will send the location of the new wayshrine. check for m_ownerRevision being 0 and increase it afterwards */
+        piece = GetComponent<Piece>();
+        _zNetView = GetComponent<ZNetView>();
+
+        if (_zNetView.GetZDO() is ZDO zdo && zdo.IsValid())
         {
-            /* in the awake method of our component, we will send the location of the new wayshrine. check for m_ownerRevision being 0 and increase it afterwards */
-            piece = GetComponent<Piece>();
-            _zNetView = GetComponent<ZNetView>();
-
-            if (_zNetView.GetZDO() is ZDO zdo && zdo.IsValid())
+            if (zdo.OwnerRevision == 0)
             {
-                if (zdo.OwnerRevision == 0)
-                {
-                    zdo.IncreaseOwnerRevision();
+                zdo.IncreaseOwnerRevision();
 
-                    Util.SendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
-                }
+                Util.SendWayshrines(ZRoutedRpc.Everybody, new List<ZDO> { zdo });
             }
-            else
-            {
-                DestroyImmediate(this);
-            }
+            _zdoId = zdo.m_uid;
         }
-
-        public void OnDestroy()
+        else
         {
-            if (Wayshrines.ContainsKey(transform.position))
-            {
-                ZPackage package = new();
-                package.Write(1);
-                package.Write(transform.position);
-                package.Write(transform.rotation);
-                package.Write(0);
-                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, "RequestWayZDOs", package);
-            }
+            DestroyImmediate(this);
         }
+    }
 
-        public void Start()
+    public void OnDestroy()
+    {
+        if (Wayshrines.ContainsKey(transform.position))
         {
-            if (WayshrinePlugin.isAdmin)
-            {
-                wayshrinePiece = GetComponent<Piece>();
-                wayshrinePiece.m_canBeRemoved = true;
-            }
-
-            /* It appears Util.sendWayshrines(0) is needed here, otherwise the map pins disappear from the map after a distant teleport */
-            Util.SendWayshrines(ZRoutedRpc.Everybody);
+            ZPackage package = new();
+            package.Write(1);
+            package.Write(transform.position);
+            package.Write(transform.rotation);
+            package.Write(0);
+            package.Write(new ZDOID());
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, WayshrinePlugin.RPC_RequestWayshrines, package);
         }
+    }
 
-        public struct WayshrineInfo
+    public void Start()
+    {
+        if (WayshrinePlugin.isAdmin)
         {
-            public GameObject Prefab;
-            public Quaternion Rotation;
+            wayshrinePiece = GetComponent<Piece>();
+            wayshrinePiece.m_canBeRemoved = true;
         }
+
+        /* It appears Util.sendWayshrines(0) is needed here, otherwise the map pins disappear from the map after a distant teleport */
+        Util.SendWayshrines(0);
+    }
+
+    public struct WayshrineInfo
+    {
+        public GameObject Prefab;
+        public Quaternion Rotation;
+        public Vector3 Position;
+        public ZDOID ZdoId;
     }
 }
